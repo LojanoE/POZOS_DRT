@@ -149,7 +149,7 @@
     // --- SUPABASE CONFIGURATION ---
     const SUPABASE_URL = 'https://krkoacewzhigjjybgzng.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtya29hY2V3emhpZ2pqeWJnem5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NTMwMDgsImV4cCI6MjA4MzAyOTAwOH0.XeNiavBsXx3Q6HOVw_btjqmXoYB1ux22lo5muy330Yw';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // Checklist Items Data
     const checklistItems = [
@@ -237,7 +237,7 @@
         if (!date) return;
 
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('inspections')
                 .select('*')
                 .eq('inspection_date', date)
@@ -331,7 +331,7 @@
             };
 
             // Check if record exists
-            const { data: existing } = await supabase
+            const { data: existing } = await supabaseClient
                 .from('inspections')
                 .select('id')
                 .eq('inspection_date', inspectionDate)
@@ -340,13 +340,13 @@
             let result;
             if (existing) {
                 // Update
-                result = await supabase
+                result = await supabaseClient
                     .from('inspections')
                     .update(payload)
                     .eq('id', existing.id);
             } else {
                 // Insert
-                result = await supabase
+                result = await supabaseClient
                     .from('inspections')
                     .insert([payload]);
             }
