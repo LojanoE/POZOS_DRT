@@ -61,7 +61,18 @@
 </head>
 <body>
 
-<div class="container main-container">
+<!-- Login Overlay -->
+<div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #343a40; z-index: 10000; display: flex; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 30px; border-radius: 10px; width: 300px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+        <h3 style="margin-bottom: 20px; color: #343a40;">Iniciar Sesión</h3>
+        <input type="text" id="loginUser" class="form-control mb-3" placeholder="Usuario">
+        <input type="password" id="loginPass" class="form-control mb-3" placeholder="Contraseña">
+        <button onclick="performLogin()" class="btn btn-primary w-100">Entrar</button>
+        <div id="loginError" style="color: red; margin-top: 10px; font-size: 0.9em; display: none;">Credenciales incorrectas</div>
+    </div>
+</div>
+
+<div class="container main-container" id="mainApp" style="display: none;">
     
     <!-- Nav Tabs -->
     <ul class="nav nav-tabs" id="appTabs" role="tablist">
@@ -150,6 +161,56 @@
     const SUPABASE_URL = 'https://krkoacewzhigjjybgzng.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtya29hY2V3emhpZ2pqeWJnem5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NTMwMDgsImV4cCI6MjA4MzAyOTAwOH0.XeNiavBsXx3Q6HOVw_btjqmXoYB1ux22lo5muy330Yw';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- LOGIN LOGIC ---
+    async function performLogin() {
+        const user = document.getElementById('loginUser').value;
+        const pass = document.getElementById('loginPass').value;
+        const errorMsg = document.getElementById('loginError');
+        const btn = document.querySelector('#loginOverlay button');
+
+        errorMsg.style.display = 'none';
+        btn.disabled = true;
+        btn.innerText = 'Verificando...';
+
+        try {
+            // Check credentials in 'users' table
+            const { data, error } = await supabaseClient
+                .from('users')
+                .select('*')
+                .eq('username', user)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            // Simple plain text password check (as requested/setup)
+            if (data && data.password === pass) {
+                // Success
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                // Trigger initial load
+                loadDataByDate();
+            } else {
+                // Fail
+                errorMsg.innerText = "Usuario o contraseña incorrectos";
+                errorMsg.style.display = 'block';
+            }
+        } catch (err) {
+            console.error(err);
+            errorMsg.innerText = "Error de conexión";
+            errorMsg.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Entrar';
+        }
+    }
+
+    // Allow Enter key to login
+    document.getElementById('loginPass').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            performLogin();
+        }
+    });
 
     // Checklist Items Data
     const checklistItems = [
