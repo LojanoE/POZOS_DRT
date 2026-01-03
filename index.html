@@ -142,8 +142,15 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <!-- html2pdf.js for PDF Export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- Supabase JS Client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
+    // --- SUPABASE CONFIGURATION ---
+    const SUPABASE_URL = 'https://krkoacewzhigjjybgzng.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtya29hY2V3emhpZ2pqeWJnem5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NTMwMDgsImV4cCI6MjA4MzAyOTAwOH0.XeNiavBsXx3Q6HOVw_btjqmXoYB1ux22lo5muy330Yw';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     // Checklist Items Data
     const checklistItems = [
         {
@@ -224,39 +231,42 @@
     // Initial load
     loadDataByDate();
 
+    // --- NEW: Load from Supabase ---
     async function loadDataByDate() {
         const date = dateInput.value;
         if (!date) return;
 
         try {
-            const response = await fetch(`/api/inspection/${date}`);
-            const result = await response.json();
+            const { data, error } = await supabase
+                .from('inspections')
+                .select('*')
+                .eq('inspection_date', date)
+                .maybeSingle();
 
-            if (result.found) {
-                const data = result.data;
+            if (error) {
+                console.error('Error loading data:', error);
+                return;
+            }
+
+            if (data) {
+                document.getElementById('dayShiftPerson').value = data.day_shift_person || '';
+                document.getElementById('nightShiftPerson').value = data.night_shift_person || '';
+                document.getElementById('dayRemarks').value = data.day_remarks || '';
+                document.getElementById('nightRemarks').value = data.night_remarks || '';
+
+                const checklist = data.checklist_data || [];
                 
-                // Populate text fields
-                document.getElementById('dayShiftPerson').value = data.dayPerson || '';
-                document.getElementById('nightShiftPerson').value = data.nightPerson || '';
-                document.getElementById('dayRemarks').value = data.dayRemarks || '';
-                document.getElementById('nightRemarks').value = data.nightRemarks || '';
+                checklist.forEach(item => {
+                    const daySelect = document.querySelector(`[name="day_${item.id}"]`);
+                    const dayNote = document.querySelector(`[name="day_note_${item.id}"]`);
+                    const nightSelect = document.querySelector(`[name="night_${item.id}"]`);
+                    const nightNote = document.querySelector(`[name="night_note_${item.id}"]`);
 
-                // Populate checklist
-                if (data.checklist) {
-                    const checklist = typeof data.checklist === 'string' ? JSON.parse(data.checklist) : data.checklist;
-                    
-                    checklist.forEach(item => {
-                        const daySelect = document.querySelector(`[name="day_${item.id}"]`);
-                        const dayNote = document.querySelector(`[name="day_note_${item.id}"]`);
-                        const nightSelect = document.querySelector(`[name="night_${item.id}"]`);
-                        const nightNote = document.querySelector(`[name="night_note_${item.id}"]`);
-
-                        if (daySelect) daySelect.value = item.day_status || '';
-                        if (dayNote) dayNote.value = item.day_note || '';
-                        if (nightSelect) nightSelect.value = item.night_status || '';
-                        if (nightNote) nightNote.value = item.night_note || '';
-                    });
-                }
+                    if (daySelect) daySelect.value = item.day_status || '';
+                    if (dayNote) dayNote.value = item.day_note || '';
+                    if (nightSelect) nightSelect.value = item.night_status || '';
+                    if (nightNote) nightNote.value = item.night_note || '';
+                });
                 console.log("Datos cargados para la fecha " + date);
             } else {
                 console.log("No se encontraron datos para " + date + ", limpiando formulario.");
@@ -269,7 +279,7 @@
                 document.querySelectorAll('tbody input').forEach(el => el.value = '');
             }
         } catch (error) {
-            console.error('Error cargando datos:', error);
+            console.error('Error in loadDataByDate:', error);
         }
     }
 
@@ -284,9 +294,9 @@
     // Handle Submit
     document.getElementById('inspectionForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        // Default action could be save or nothing if button types handle it
     });
 
+    // --- NEW: Save to Supabase ---
     async function saveToDatabase(silent = false) {
         const btn = document.querySelector('button[onclick="saveToDatabase()"]');
         const originalText = btn ? btn.innerText : '';
@@ -309,34 +319,48 @@
                 };
             });
 
+            const inspectionDate = document.getElementById('date').value;
+
             const payload = {
-                date: document.getElementById('date').value,
-                dayPerson: document.getElementById('dayShiftPerson').value,
-                nightPerson: document.getElementById('nightShiftPerson').value,
-                dayRemarks: document.getElementById('dayRemarks').value,
-                nightRemarks: document.getElementById('nightRemarks').value,
-                checklist: checklistData
+                inspection_date: inspectionDate,
+                day_shift_person: document.getElementById('dayShiftPerson').value,
+                night_shift_person: document.getElementById('nightShiftPerson').value,
+                day_remarks: document.getElementById('dayRemarks').value,
+                night_remarks: document.getElementById('nightRemarks').value,
+                checklist_data: checklistData
             };
 
-            const response = await fetch('/api/save', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                if(!silent) alert('¡Datos guardados exitosamente en Supabase!');
-                return true;
+            // Check if record exists
+            const { data: existing } = await supabase
+                .from('inspections')
+                .select('id')
+                .eq('inspection_date', inspectionDate)
+                .maybeSingle();
+            
+            let result;
+            if (existing) {
+                // Update
+                result = await supabase
+                    .from('inspections')
+                    .update(payload)
+                    .eq('id', existing.id);
             } else {
-                alert('Error al guardar: ' + result.message);
-                return false;
+                // Insert
+                result = await supabase
+                    .from('inspections')
+                    .insert([payload]);
             }
+
+            if (result.error) {
+                throw result.error;
+            }
+
+            if(!silent) alert('¡Datos guardados exitosamente en Supabase!');
+            return true;
 
         } catch (error) {
             console.error('Error:', error);
-            alert('Error de conexión con el servidor.');
+            alert('Error al guardar: ' + error.message);
             return false;
         } finally {
             if(btn) {
@@ -348,8 +372,6 @@
 
     async function exportToPDF() {
         // 1. Auto-save first
-        // We pass 'true' to silent mode so we don't annoy the user with a popup before PDF generation
-        // But if it fails, saveToDatabase will still alert the error.
         const saved = await saveToDatabase(true); 
         
         if (!saved) {
@@ -366,13 +388,11 @@
         // 3. Build Table Rows HTML
         let tableRows = '';
         checklistItems.forEach(item => {
-            // Get values directly from the live form
             const daySelect = document.querySelector(`[name="day_${item.id}"]`);
             const dayNoteInput = document.querySelector(`[name="day_note_${item.id}"]`);
             const nightSelect = document.querySelector(`[name="night_${item.id}"]`);
             const nightNoteInput = document.querySelector(`[name="night_note_${item.id}"]`);
 
-            // Format values
             const formatStatus = (val) => {
                 if (val === 'OK') return '√ (Normal)';
                 if (val === 'X') return 'X (Anormal)';
