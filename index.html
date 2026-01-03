@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Verificación de Pozos de Inundación</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-bottom: 10px;
+        }
+        .main-container {
+            max-width: 900px;
+            margin: 10px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow: hidden; /* For rounded corners with tabs */
+        }
+        .tab-content {
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            background: white;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+        h1 {
+            font-size: 1.3rem;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #343a40;
+        }
+        .form-section {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+        }
+        .table-responsive {
+            margin-top: 10px;
+        }
+        th {
+            vertical-align: middle;
+            text-align: center;
+        }
+        .zh-text {
+            font-size: 0.9em;
+            color: #555;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .es-text {
+            font-weight: bold;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container main-container">
+    
+    <!-- Nav Tabs -->
+    <ul class="nav nav-tabs" id="appTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="verificacion-tab" data-bs-toggle="tab" data-bs-target="#verificacion" type="button" role="tab" aria-controls="verificacion" aria-selected="true">Verificación</button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="appTabsContent">
+        <!-- Tab: Verificación -->
+        <div class="tab-pane fade show active" id="verificacion" role="tabpanel" aria-labelledby="verificacion-tab">
+            
+            <h1>
+                <span class="zh-text">排洪井安全、环境、排水生产检查表</span>
+                <span class="es-text">Lista de verificación ambiental y de seguridad de pozos de inundación</span>
+            </h1>
+
+            <form id="inspectionForm">
+                <!-- Metadata Section -->
+                <div class="row form-section">
+                    <div class="col-md-4 mb-1">
+                        <label for="date" class="form-label">日期 Fecha:</label>
+                        <input type="date" class="form-control" id="date" required>
+                    </div>
+                    <div class="col-md-4 mb-1">
+                        <label for="dayShiftPerson" class="form-label">白班当班人 Dia (Nombre):</label>
+                        <input type="text" class="form-control" id="dayShiftPerson">
+                    </div>
+                    <div class="col-md-4 mb-1">
+                        <label for="nightShiftPerson" class="form-label">夜班当班人 Noche (Nombre):</label>
+                        <input type="text" class="form-control" id="nightShiftPerson">
+                    </div>
+                </div>
+
+                <!-- Checklist Table -->
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 50%">检查项目 Artículos Marcados</th>
+                                <th style="width: 25%">白班 Dia</th>
+                                <th style="width: 25%">夜班 Noche</th>
+                            </tr>
+                        </thead>
+                        <tbody id="checklistBody">
+                            <!-- Items will be injected here by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Remarks Section -->
+                <div class="row mt-2">
+                    <div class="col-md-6 mb-1">
+                        <label for="dayRemarks" class="form-label">白班备注 Observación (Dia):</label>
+                        <textarea class="form-control" id="dayRemarks" rows="3"></textarea>
+                    </div>
+                    <div class="col-md-6 mb-1">
+                        <label for="nightRemarks" class="form-label">夜班备注 Observación (Noche):</label>
+                        <textarea class="form-control" id="nightRemarks" rows="3"></textarea>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-2">
+                    <button type="button" class="btn btn-secondary me-md-2" onclick="clearForm()">Limpiar / Clear</button>
+                    <button type="button" class="btn btn-success me-md-2" onclick="saveToDatabase()">Guardar en BD (Supabase)</button>
+                    <button type="button" class="btn btn-danger" onclick="exportToPDF()">Generar PDF / Generate PDF</button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- Bootstrap JS Bundle (Required for Tabs) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- html2pdf.js for PDF Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+    // Checklist Items Data
+    const checklistItems = [
+        {
+            zh: "柴油发电机，油罐，油管是否是否有柴油溢出，柴油机内部是否漏油，油罐阀门是否关闭",
+            es: "Si el motor diesel, el tanque de aceite y la tubería de aceite tienen fugas de aceite, Si la válvula del tanque diesel está cerrada",
+            id: "q1"
+        },
+        {
+            zh: "柴油漏油槽，发电机周围是否有油渍，油渍是否清理",
+            es: "Tanque de fugas de aceite diesel, si hay manchas de aceite alrededor del generador y si las manchas de aceite se limpian",
+            id: "q2"
+        },
+        {
+            zh: "浮船是否牢靠，是否有浮块散架",
+            es: "Si el pontón es confiable y si hay bloques flotantes que se desmoronan",
+            id: "q3"
+        },
+        {
+            zh: "2台水泵是否运行正常",
+            es: "Funcionan normalmente las 2 bombas",
+            id: "q4"
+        },
+        {
+            zh: "道路及边坡是否正常，是否有滑坡现象",
+            es: "Si los caminos y pendientes son normales y si hay algún fenómeno de derrumbe",
+            id: "q5"
+        },
+        {
+            zh: "垃圾是否进袋，每班次是否带走当班垃圾",
+            es: "Si la basura se pone en la bolsa y si la basura de turno se retira en cada turno.",
+            id: "q6"
+        },
+        {
+            zh: "排洪井安全设施是否正常（安全网，安全钢绳）",
+            es: "Si las instalaciones de seguridad de los pozos de descarga de inundación son normales (red segura, cuerda de acero de seguridad)",
+            id: "q7"
+        }
+    ];
+
+    // Render Checklist
+    const tbody = document.getElementById('checklistBody');
+    checklistItems.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <span class="zh-text">${index + 1}. ${item.zh}</span>
+                <span class="es-text">${item.es}</span>
+            </td>
+            <td>
+                <select class="form-select form-select-sm" name="day_${item.id}">
+                    <option value="">-</option>
+                    <option value="OK">√ (Normal)</option>
+                    <option value="X">X (Anormal)</option>
+                    <option value="NA">N/A</option>
+                </select>
+                <input type="text" class="form-control form-control-sm mt-1" placeholder="Nota..." name="day_note_${item.id}">
+            </td>
+            <td>
+                <select class="form-select form-select-sm" name="night_${item.id}">
+                    <option value="">-</option>
+                    <option value="OK">√ (Normal)</option>
+                    <option value="X">X (Anormal)</option>
+                    <option value="NA">N/A</option>
+                </select>
+                <input type="text" class="form-control form-control-sm mt-1" placeholder="Nota..." name="night_note_${item.id}">
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Set today's date
+    const dateInput = document.getElementById('date');
+    dateInput.valueAsDate = new Date();
+
+    // Listen for date changes
+    dateInput.addEventListener('change', loadDataByDate);
+
+    // Initial load
+    loadDataByDate();
+
+    async function loadDataByDate() {
+        const date = dateInput.value;
+        if (!date) return;
+
+        try {
+            const response = await fetch(`/api/inspection/${date}`);
+            const result = await response.json();
+
+            if (result.found) {
+                const data = result.data;
+                
+                // Populate text fields
+                document.getElementById('dayShiftPerson').value = data.dayPerson || '';
+                document.getElementById('nightShiftPerson').value = data.nightPerson || '';
+                document.getElementById('dayRemarks').value = data.dayRemarks || '';
+                document.getElementById('nightRemarks').value = data.nightRemarks || '';
+
+                // Populate checklist
+                if (data.checklist) {
+                    const checklist = typeof data.checklist === 'string' ? JSON.parse(data.checklist) : data.checklist;
+                    
+                    checklist.forEach(item => {
+                        const daySelect = document.querySelector(`[name="day_${item.id}"]`);
+                        const dayNote = document.querySelector(`[name="day_note_${item.id}"]`);
+                        const nightSelect = document.querySelector(`[name="night_${item.id}"]`);
+                        const nightNote = document.querySelector(`[name="night_note_${item.id}"]`);
+
+                        if (daySelect) daySelect.value = item.day_status || '';
+                        if (dayNote) dayNote.value = item.day_note || '';
+                        if (nightSelect) nightSelect.value = item.night_status || '';
+                        if (nightNote) nightNote.value = item.night_note || '';
+                    });
+                }
+                console.log("Datos cargados para la fecha " + date);
+            } else {
+                console.log("No se encontraron datos para " + date + ", limpiando formulario.");
+                document.getElementById('dayShiftPerson').value = '';
+                document.getElementById('nightShiftPerson').value = '';
+                document.getElementById('dayRemarks').value = '';
+                document.getElementById('nightRemarks').value = '';
+                
+                document.querySelectorAll('tbody select').forEach(el => el.value = '');
+                document.querySelectorAll('tbody input').forEach(el => el.value = '');
+            }
+        } catch (error) {
+            console.error('Error cargando datos:', error);
+        }
+    }
+
+    // Clear Form
+    function clearForm() {
+        if(confirm('¿Borrar todo el formulario?')) {
+            document.getElementById('inspectionForm').reset();
+            document.getElementById('date').valueAsDate = new Date();
+        }
+    }
+
+    // Handle Submit
+    document.getElementById('inspectionForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        // Default action could be save or nothing if button types handle it
+    });
+
+    async function saveToDatabase() {
+        const btn = document.querySelector('button[onclick="saveToDatabase()"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Guardando...";
+        btn.disabled = true;
+
+        try {
+            const checklistData = checklistItems.map(item => {
+                return {
+                    id: item.id,
+                    question_zh: item.zh,
+                    question_es: item.es,
+                    day_status: document.querySelector(`[name="day_${item.id}"]`).value,
+                    day_note: document.querySelector(`[name="day_note_${item.id}"]`).value,
+                    night_status: document.querySelector(`[name="night_${item.id}"]`).value,
+                    night_note: document.querySelector(`[name="night_note_${item.id}"]`).value
+                };
+            });
+
+            const payload = {
+                date: document.getElementById('date').value,
+                dayPerson: document.getElementById('dayShiftPerson').value,
+                nightPerson: document.getElementById('nightShiftPerson').value,
+                dayRemarks: document.getElementById('dayRemarks').value,
+                nightRemarks: document.getElementById('nightRemarks').value,
+                checklist: checklistData
+            };
+
+            const response = await fetch('/api/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                alert('¡Datos guardados exitosamente en Supabase!');
+            } else {
+                alert('Error al guardar: ' + result.message);
+            }
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error de conexión con el servidor.');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    function exportToPDF() {
+        // 1. Gather Data
+        const date = document.getElementById('date').value;
+        const dayPerson = document.getElementById('dayShiftPerson').value || '-';
+        const nightPerson = document.getElementById('nightShiftPerson').value || '-';
+        const dayRemarks = document.getElementById('dayRemarks').value || '-';
+        const nightRemarks = document.getElementById('nightRemarks').value || '-';
+
+        // 2. Build Table Rows HTML
+        let tableRows = '';
+        checklistItems.forEach(item => {
+            // Get values directly from the live form
+            const daySelect = document.querySelector(`[name="day_${item.id}"]`);
+            const dayNoteInput = document.querySelector(`[name="day_note_${item.id}"]`);
+            const nightSelect = document.querySelector(`[name="night_${item.id}"]`);
+            const nightNoteInput = document.querySelector(`[name="night_note_${item.id}"]`);
+
+            // Format values
+            const formatStatus = (val) => {
+                if (val === 'OK') return '√ (Normal)';
+                if (val === 'X') return 'X (Anormal)';
+                if (val === 'NA') return 'N/A';
+                return '-';
+            };
+
+            const dayStatus = formatStatus(daySelect.value);
+            const dayNote = dayNoteInput.value;
+            const nightStatus = formatStatus(nightSelect.value);
+            const nightNote = nightNoteInput.value;
+
+            tableRows += `
+                <tr>
+                    <td style="border: 1px solid black; padding: 5px;">
+                        <div style="color: #333; font-size: 10px;">${item.zh}</div>
+                        <div style="font-weight: bold; font-size: 11px;">${item.es}</div>
+                    </td>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center; vertical-align: middle;">
+                        <div style="font-weight: bold;">${dayStatus}</div>
+                        ${dayNote ? `<div style="font-style: italic; font-size: 9px; margin-top: 2px;">${dayNote}</div>` : ''}
+                    </td>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center; vertical-align: middle;">
+                        <div style="font-weight: bold;">${nightStatus}</div>
+                        ${nightNote ? `<div style="font-style: italic; font-size: 9px; margin-top: 2px;">${nightNote}</div>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+
+        // 3. Construct Complete HTML
+        const htmlContent = `
+            <div style="font-family: Arial, sans-serif; color: black; padding: 15px; background: white; width: 100%; box-sizing: border-box;">
+                
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 8px;">
+                    <h2 style="margin: 0 0 4px 0; font-size: 16px;">排洪井安全、环境、排水生产检查表</h2>
+                    <h3 style="margin: 0; font-size: 14px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
+                </div>
+
+                <!-- Meta Info -->
+                <div style="margin-bottom: 8px; border: 1px solid black; padding: 4px; background-color: #f8f9fa;">
+                    <table style="width: 100%; font-size: 10px;">
+                        <tr>
+                            <td><strong>日期 Fecha:</strong> ${date}</td>
+                            <td><strong>白班 Dia:</strong> ${dayPerson}</td>
+                            <td><strong>夜班 Noche:</strong> ${nightPerson}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Checklist Table -->
+                <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 8px;">
+                    <thead>
+                        <tr style="background-color: #e9ecef;">
+                            <th style="border: 1px solid black; padding: 4px; width: 50%;">检查项目 Artículos Marcados</th>
+                            <th style="border: 1px solid black; padding: 4px; width: 25%;">白班 Dia</th>
+                            <th style="border: 1px solid black; padding: 4px; width: 25%;">夜班 Noche</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                    </tbody>
+                </table>
+
+                <!-- Remarks -->
+                <div style="font-size: 9px;">
+                    <div style="margin-bottom: 6px;">
+                        <div style="font-weight: bold; background-color: #e9ecef; padding: 3px; border: 1px solid black; border-bottom: none;">
+                            白班备注 Observación:
+                        </div>
+                        <div style="border: 1px solid black; padding: 4px; min-height: 25px; white-space: pre-wrap;">${dayRemarks}</div>
+                    </div>
+                    <div>
+                        <div style="font-weight: bold; background-color: #e9ecef; padding: 3px; border: 1px solid black; border-bottom: none;">
+                            夜班备注 Observación:
+                        </div>
+                        <div style="border: 1px solid black; padding: 4px; min-height: 25px; white-space: pre-wrap;">${nightRemarks}</div>
+                    </div>
+                </div>
+
+            </div>
+        `;
+
+        // 4. Create Temporary Container (Visible Overlay)
+        const container = document.createElement('div');
+        // Reset scroll position to ensure capture starts from top
+        window.scrollTo(0, 0);
+        
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100vw'; 
+        container.style.height = '100vh';
+        container.style.zIndex = '9999'; // On top of everything
+        container.style.backgroundColor = 'rgba(0,0,0,0.8)'; // Dim background
+        container.style.overflowY = 'auto'; 
+        container.style.display = 'flex';
+        container.style.justifyContent = 'center';
+        container.style.paddingTop = '10px';
+        
+        // Inner wrapper for the actual A4 page look
+        const pageWrapper = document.createElement('div');
+        pageWrapper.innerHTML = htmlContent;
+        // Exact A4 width in px (at 96 DPI, 210mm is approx 794px). 
+        // We use slightly less to ensure margins fit.
+        pageWrapper.style.width = '210mm'; 
+        // REMOVED minHeight to prevent forcing a full page that might overflow by 1px
+        // pageWrapper.style.minHeight = '297mm'; 
+        pageWrapper.style.background = 'white';
+        pageWrapper.style.boxShadow = '0 0 10px rgba(0,0,0,0.5)';
+        // Ensure content doesn't stretch height unnecessarily
+        pageWrapper.style.height = 'fit-content'; 
+        
+        // Clear container and append wrapper
+        container.innerHTML = ''; 
+        container.appendChild(pageWrapper);
+        
+        // Add a "Generating..." message
+        const message = document.createElement('div');
+        message.textContent = "Generando PDF... / Generating PDF...";
+        message.style.position = 'fixed';
+        message.style.top = '10px';
+        message.style.left = '50%';
+        message.style.transform = 'translateX(-50%)';
+        message.style.background = '#28a745';
+        message.style.color = 'white';
+        message.style.padding = '10px 20px';
+        message.style.borderRadius = '5px';
+        message.style.zIndex = '10000';
+        container.appendChild(message);
+
+        document.body.appendChild(container);
+
+        // 5. Generate PDF with Delay
+        setTimeout(() => {
+            const opt = {
+                margin:       0,
+                filename:     `Inspeccion_${date}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true,
+                    scrollY: 0, // CRITICAL: Ignore user scroll position
+                    windowWidth: document.documentElement.offsetWidth // Ensure full width capture
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(pageWrapper).save().then(() => {
+                document.body.removeChild(container);
+            });
+        }, 800); // Increased delay slightly
+    }
+</script>
+
+</body>
+</html>
