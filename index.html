@@ -13,15 +13,15 @@
             padding-bottom: 10px;
         }
         .main-container {
-            max-width: 900px;
-            margin: 10px auto;
+            max-width: 1000px;
+            margin: 20px auto;
             background: white;
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
             overflow: hidden; /* For rounded corners with tabs */
         }
         .tab-content {
-            padding: 15px;
+            padding: 25px;
             border: 1px solid #dee2e6;
             border-top: none;
             background: white;
@@ -29,19 +29,19 @@
             border-bottom-right-radius: 10px;
         }
         h1 {
-            font-size: 1.3rem;
+            font-size: 1.5rem;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
             color: #343a40;
         }
         .form-section {
-            margin-bottom: 15px;
-            padding: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
             background-color: #e9ecef;
             border-radius: 5px;
         }
         .table-responsive {
-            margin-top: 10px;
+            margin-top: 20px;
         }
         th {
             vertical-align: middle;
@@ -287,13 +287,16 @@
         // Default action could be save or nothing if button types handle it
     });
 
-    async function saveToDatabase() {
+    async function saveToDatabase(silent = false) {
         const btn = document.querySelector('button[onclick="saveToDatabase()"]');
-        const originalText = btn.innerText;
-        btn.innerText = "Guardando...";
-        btn.disabled = true;
+        const originalText = btn ? btn.innerText : '';
+        if(btn) {
+             btn.innerText = "Guardando...";
+             btn.disabled = true;
+        }
 
         try {
+            // Collect Data
             const checklistData = checklistItems.map(item => {
                 return {
                     id: item.id,
@@ -324,29 +327,43 @@
             const result = await response.json();
 
             if (result.success) {
-                alert('¡Datos guardados exitosamente en Supabase!');
+                if(!silent) alert('¡Datos guardados exitosamente en Supabase!');
+                return true;
             } else {
                 alert('Error al guardar: ' + result.message);
+                return false;
             }
 
         } catch (error) {
             console.error('Error:', error);
             alert('Error de conexión con el servidor.');
+            return false;
         } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
+            if(btn) {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
         }
     }
 
-    function exportToPDF() {
-        // 1. Gather Data
+    async function exportToPDF() {
+        // 1. Auto-save first
+        // We pass 'true' to silent mode so we don't annoy the user with a popup before PDF generation
+        // But if it fails, saveToDatabase will still alert the error.
+        const saved = await saveToDatabase(true); 
+        
+        if (!saved) {
+             if(!confirm("No se pudo guardar en la base de datos. ¿Generar PDF de todos modos?")) return;
+        }
+
+        // 2. Gather Data for PDF
         const date = document.getElementById('date').value;
         const dayPerson = document.getElementById('dayShiftPerson').value || '-';
         const nightPerson = document.getElementById('nightShiftPerson').value || '-';
         const dayRemarks = document.getElementById('dayRemarks').value || '-';
         const nightRemarks = document.getElementById('nightRemarks').value || '-';
 
-        // 2. Build Table Rows HTML
+        // 3. Build Table Rows HTML
         let tableRows = '';
         checklistItems.forEach(item => {
             // Get values directly from the live form
@@ -386,19 +403,19 @@
             `;
         });
 
-        // 3. Construct Complete HTML
+        // 4. Construct Complete HTML
         const htmlContent = `
-            <div style="font-family: Arial, sans-serif; color: black; padding: 15px; background: white; width: 100%; box-sizing: border-box;">
+            <div style="font-family: Arial, sans-serif; color: black; padding: 45px; background: white; width: 100%; box-sizing: border-box;">
                 
                 <!-- Header -->
-                <div style="text-align: center; margin-bottom: 8px;">
-                    <h2 style="margin: 0 0 4px 0; font-size: 16px;">排洪井安全、环境、排水生产检查表</h2>
-                    <h3 style="margin: 0; font-size: 14px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
+                <div style="text-align: center; margin-bottom: 25px;">
+                    <h2 style="margin: 0 0 8px 0; font-size: 20px;">排洪井安全、环境、排水生产检查表</h2>
+                    <h3 style="margin: 0; font-size: 18px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
                 </div>
 
                 <!-- Meta Info -->
-                <div style="margin-bottom: 8px; border: 1px solid black; padding: 4px; background-color: #f8f9fa;">
-                    <table style="width: 100%; font-size: 10px;">
+                <div style="margin-bottom: 20px; border: 1px solid black; padding: 12px; background-color: #f8f9fa;">
+                    <table style="width: 100%; font-size: 13px;">
                         <tr>
                             <td><strong>日期 Fecha:</strong> ${date}</td>
                             <td><strong>白班 Dia:</strong> ${dayPerson}</td>
@@ -408,12 +425,12 @@
                 </div>
 
                 <!-- Checklist Table -->
-                <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-bottom: 8px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 25px;">
                     <thead>
                         <tr style="background-color: #e9ecef;">
-                            <th style="border: 1px solid black; padding: 4px; width: 50%;">检查项目 Artículos Marcados</th>
-                            <th style="border: 1px solid black; padding: 4px; width: 25%;">白班 Dia</th>
-                            <th style="border: 1px solid black; padding: 4px; width: 25%;">夜班 Noche</th>
+                            <th style="border: 1px solid black; padding: 10px; width: 50%;">检查项目 Artículos Marcados</th>
+                            <th style="border: 1px solid black; padding: 10px; width: 25%;">白班 Dia</th>
+                            <th style="border: 1px solid black; padding: 10px; width: 25%;">夜班 Noche</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -422,25 +439,25 @@
                 </table>
 
                 <!-- Remarks -->
-                <div style="font-size: 9px;">
-                    <div style="margin-bottom: 6px;">
-                        <div style="font-weight: bold; background-color: #e9ecef; padding: 3px; border: 1px solid black; border-bottom: none;">
+                <div style="font-size: 12px;">
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: bold; background-color: #e9ecef; padding: 6px; border: 1px solid black; border-bottom: none;">
                             白班备注 Observación:
                         </div>
-                        <div style="border: 1px solid black; padding: 4px; min-height: 25px; white-space: pre-wrap;">${dayRemarks}</div>
+                        <div style="border: 1px solid black; padding: 10px; min-height: 60px; white-space: pre-wrap;">${dayRemarks}</div>
                     </div>
                     <div>
-                        <div style="font-weight: bold; background-color: #e9ecef; padding: 3px; border: 1px solid black; border-bottom: none;">
+                        <div style="font-weight: bold; background-color: #e9ecef; padding: 6px; border: 1px solid black; border-bottom: none;">
                             夜班备注 Observación:
                         </div>
-                        <div style="border: 1px solid black; padding: 4px; min-height: 25px; white-space: pre-wrap;">${nightRemarks}</div>
+                        <div style="border: 1px solid black; padding: 10px; min-height: 60px; white-space: pre-wrap;">${nightRemarks}</div>
                     </div>
                 </div>
 
             </div>
         `;
 
-        // 4. Create Temporary Container (Visible Overlay)
+        // 5. Create Temporary Container (Visible Overlay)
         const container = document.createElement('div');
         // Reset scroll position to ensure capture starts from top
         window.scrollTo(0, 0);
@@ -490,7 +507,7 @@
 
         document.body.appendChild(container);
 
-        // 5. Generate PDF with Delay
+        // 6. Generate PDF with Delay
         setTimeout(() => {
             const opt = {
                 margin:       0,
