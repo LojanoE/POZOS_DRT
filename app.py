@@ -10,7 +10,12 @@ DB_URL = "postgresql://postgres.krkoacewzhigjjybgzng:GDR.lsm2026@aws-0-us-west-2
 
 @app.route('/')
 def index():
-    return send_file('index.html')
+    response = send_file('index.html')
+    # Force the browser to always check for a new version of the HTML
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 @app.route('/api/inspection/<date_str>', methods=['GET'])
 def get_inspection(date_str):

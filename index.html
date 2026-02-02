@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Lista de Verificación de Pozos de Inundación</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -70,11 +73,13 @@
 <!-- Login Overlay -->
 <div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #343a40; z-index: 10000; display: flex; justify-content: center; align-items: center;">
     <div style="background: white; padding: 30px; border-radius: 10px; width: 300px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-        <h3 style="margin-bottom: 20px; color: #343a40;">Iniciar Sesión</h3>
+        <h3 style="margin-bottom: 5px; color: #343a40;">Iniciar Sesión</h3>
+        <p class="text-muted mb-4" style="font-size: 0.8rem;">Versión del Sistema: <span class="app-version-text">...</span></p>
         <input type="text" id="loginUser" class="form-control mb-3" placeholder="Usuario">
         <input type="password" id="loginPass" class="form-control mb-3" placeholder="Contraseña">
         <button onclick="performLogin()" class="btn btn-primary w-100">Entrar</button>
         <div id="loginError" style="color: red; margin-top: 10px; font-size: 0.9em; display: none;">Credenciales incorrectas</div>
+        <button onclick="forceUpdate()" class="btn btn-link btn-sm mt-3 text-decoration-none" style="color: #6c757d;">Forzar Actualización</button>
     </div>
 </div>
 
@@ -103,16 +108,26 @@
             <form id="inspectionForm">
                 <!-- Metadata Section -->
                 <div class="row form-section">
-                    <div class="col-md-4 mb-1">
+                    <div class="col-md-3 mb-1">
                         <label for="date" class="form-label">日期 Fecha:</label>
                         <input type="date" class="form-control" id="date" required>
                     </div>
-                    <div class="col-md-4 mb-1">
-                        <label for="dayShiftPerson" class="form-label">白班当班人 Dia (Nombre):</label>
+                    <div class="col-md-2 mb-1">
+                        <label for="versionSelect" class="form-label">版本 Versión:</label>
+                        <select class="form-select" id="versionSelect">
+                            <option value="new">+ Nueva Versión</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 mb-1">
+                        <label for="versionDescription" class="form-label">版本说明 Detalle Versión:</label>
+                        <input type="text" class="form-control" id="versionDescription" placeholder="Ej: Original, Corregido...">
+                    </div>
+                    <div class="col-md-2 mb-1">
+                        <label for="dayShiftPerson" class="form-label">白班 Dia:</label>
                         <input type="text" class="form-control" id="dayShiftPerson">
                     </div>
-                    <div class="col-md-4 mb-1">
-                        <label for="nightShiftPerson" class="form-label">夜班当班人 Noche (Nombre):</label>
+                    <div class="col-md-2 mb-1">
+                        <label for="nightShiftPerson" class="form-label">夜班 Noche:</label>
                         <input type="text" class="form-control" id="nightShiftPerson">
                     </div>
                 </div>
@@ -185,6 +200,13 @@
         </div>
     </div>
 
+    <div class="text-center pb-3">
+        <small class="text-muted">
+            Versión del Sistema: <span class="app-version-text">...</span> | 
+            <a href="javascript:void(0)" onclick="forceUpdate()" class="text-decoration-none">Forzar actualización de última versión</a>
+        </small>
+    </div>
+
 </div>
 
 <!-- Bootstrap JS Bundle (Required for Tabs) -->
@@ -199,6 +221,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
 <script>
+    // --- APPLICATION VERSIONING ---
+    const APP_VERSION = '1.3.0'; // Incremented for new versioning & ZIP features
+
+    function initVersion() {
+        document.querySelectorAll('.app-version-text').forEach(el => {
+            el.innerText = APP_VERSION;
+        });
+    }
+
+    function forceUpdate() {
+        if (confirm("Se forzará la recarga de la aplicación para obtener la última versión. ¿Continuar?")) {
+            // Hard reload, clearing cache where possible
+            window.location.reload(true);
+        }
+    }
+
+    // Call on load
+    window.addEventListener('DOMContentLoaded', initVersion);
+
     // --- SUPABASE CONFIGURATION ---
     const SUPABASE_URL = 'https://krkoacewzhigjjybgzng.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtya29hY2V3emhpZ2pqeWJnem5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0NTMwMDgsImV4cCI6MjA4MzAyOTAwOH0.XeNiavBsXx3Q6HOVw_btjqmXoYB1ux22lo5muy330Yw';
@@ -329,10 +370,20 @@
     // Listen for date changes
     dateInput.addEventListener('change', loadDataByDate);
 
-    // Initial load
-    loadDataByDate();
+    // Listen for version changes
+    const versionSelect = document.getElementById('versionSelect');
+    versionSelect.addEventListener('change', (e) => {
+        if (e.target.value === 'new') {
+            clearFormDataOnly();
+        } else {
+            loadSpecificVersion(e.target.value);
+        }
+    });
 
-    // --- NEW: Load from Supabase ---
+    // Global variable to store current records for the date
+    let currentDayRecords = [];
+
+    // --- NEW: Load from Supabase with Versions ---
     async function loadDataByDate() {
         const date = dateInput.value;
         if (!date) return;
@@ -342,46 +393,84 @@
                 .from('inspections')
                 .select('*')
                 .eq('inspection_date', date)
-                .maybeSingle();
+                .order('version', { ascending: false });
 
             if (error) {
                 console.error('Error loading data:', error);
                 return;
             }
 
-            if (data) {
-                document.getElementById('dayShiftPerson').value = data.day_shift_person || '';
-                document.getElementById('nightShiftPerson').value = data.night_shift_person || '';
-                document.getElementById('dayRemarks').value = data.day_remarks || '';
-                document.getElementById('nightRemarks').value = data.night_remarks || '';
+            currentDayRecords = data || [];
+            updateVersionSelector();
 
-                const checklist = data.checklist_data || [];
-                
-                checklist.forEach(item => {
-                    const daySelect = document.querySelector(`[name="day_${item.id}"]`);
-                    const dayNote = document.querySelector(`[name="day_note_${item.id}"]`);
-                    const nightSelect = document.querySelector(`[name="night_${item.id}"]`);
-                    const nightNote = document.querySelector(`[name="night_note_${item.id}"]`);
-
-                    if (daySelect) daySelect.value = item.day_status || '';
-                    if (dayNote) dayNote.value = item.day_note || '';
-                    if (nightSelect) nightSelect.value = item.night_status || '';
-                    if (nightNote) nightNote.value = item.night_note || '';
-                });
-                console.log("Datos cargados para la fecha " + date);
+            if (currentDayRecords.length > 0) {
+                // Load latest version by default
+                loadSpecificVersion(currentDayRecords[0].id);
             } else {
-                console.log("No se encontraron datos para " + date + ", limpiando formulario.");
-                document.getElementById('dayShiftPerson').value = '';
-                document.getElementById('nightShiftPerson').value = '';
-                document.getElementById('dayRemarks').value = '';
-                document.getElementById('nightRemarks').value = '';
-                
-                document.querySelectorAll('tbody select').forEach(el => el.value = '');
-                document.querySelectorAll('tbody input').forEach(el => el.value = '');
+                clearFormDataOnly();
             }
         } catch (error) {
             console.error('Error in loadDataByDate:', error);
         }
+    }
+
+    function updateVersionSelector() {
+        const select = document.getElementById('versionSelect');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="new">+ Nueva Versión</option>';
+        
+        currentDayRecords.forEach(rec => {
+            const opt = document.createElement('option');
+            opt.value = rec.id;
+            opt.innerText = `v${rec.version}${rec.version_description ? ' - ' + rec.version_description : ''}`;
+            select.appendChild(opt);
+        });
+        
+        // Try to keep previous selection if it still exists
+        if (Array.from(select.options).some(opt => opt.value === currentVal)) {
+            select.value = currentVal;
+        } else if (currentDayRecords.length > 0) {
+            select.value = currentDayRecords[0].id;
+        } else {
+            select.value = 'new';
+        }
+    }
+
+    function loadSpecificVersion(id) {
+        const data = currentDayRecords.find(r => r.id == id);
+        if (!data) return;
+
+        document.getElementById('dayShiftPerson').value = data.day_shift_person || '';
+        document.getElementById('nightShiftPerson').value = data.night_shift_person || '';
+        document.getElementById('dayRemarks').value = data.day_remarks || '';
+        document.getElementById('nightRemarks').value = data.night_remarks || '';
+        document.getElementById('versionDescription').value = data.version_description || '';
+
+        const checklist = data.checklist_data || [];
+        
+        checklist.forEach(item => {
+            const daySelect = document.querySelector(`[name="day_${item.id}"]`);
+            const dayNote = document.querySelector(`[name="day_note_${item.id}"]`);
+            const nightSelect = document.querySelector(`[name="night_${item.id}"]`);
+            const nightNote = document.querySelector(`[name="night_note_${item.id}"]`);
+
+            if (daySelect) daySelect.value = item.day_status || '';
+            if (dayNote) dayNote.value = item.day_note || '';
+            if (nightSelect) nightSelect.value = item.night_status || '';
+            if (nightNote) nightNote.value = item.night_note || '';
+        });
+        console.log("Versión v" + data.version + " cargada para " + data.inspection_date);
+    }
+
+    function clearFormDataOnly() {
+        document.getElementById('dayShiftPerson').value = '';
+        document.getElementById('nightShiftPerson').value = '';
+        document.getElementById('dayRemarks').value = '';
+        document.getElementById('nightRemarks').value = '';
+        document.getElementById('versionDescription').value = '';
+        
+        document.querySelectorAll('#checklistBody select').forEach(el => el.value = '');
+        document.querySelectorAll('#checklistBody input').forEach(el => el.value = '');
     }
 
     // Clear Form
@@ -389,6 +478,7 @@
         if(confirm('¿Borrar todo el formulario?')) {
             document.getElementById('inspectionForm').reset();
             document.getElementById('date').valueAsDate = new Date();
+            loadDataByDate();
         }
     }
 
@@ -397,7 +487,7 @@
         e.preventDefault();
     });
 
-    // --- NEW: Save to Supabase ---
+    // --- NEW: Save to Supabase with Versioning ---
     async function saveToDatabase(silent = false) {
         const btn = document.querySelector('button[onclick="saveToDatabase()"]');
         const originalText = btn ? btn.innerText : '';
@@ -407,7 +497,6 @@
         }
 
         try {
-            // Collect Data
             const checklistData = checklistItems.map(item => {
                 return {
                     id: item.id,
@@ -421,42 +510,42 @@
             });
 
             const inspectionDate = document.getElementById('date').value;
+            const selectedVersionId = document.getElementById('versionSelect').value;
+            const versionDescription = document.getElementById('versionDescription').value;
 
-            const payload = {
+            let payload = {
                 inspection_date: inspectionDate,
                 day_shift_person: document.getElementById('dayShiftPerson').value,
                 night_shift_person: document.getElementById('nightShiftPerson').value,
                 day_remarks: document.getElementById('dayRemarks').value,
                 night_remarks: document.getElementById('nightRemarks').value,
-                checklist_data: checklistData
+                checklist_data: checklistData,
+                version_description: versionDescription
             };
 
-            // Check if record exists
-            const { data: existing } = await supabaseClient
-                .from('inspections')
-                .select('id')
-                .eq('inspection_date', inspectionDate)
-                .maybeSingle();
-            
             let result;
-            if (existing) {
-                // Update
-                result = await supabaseClient
-                    .from('inspections')
-                    .update(payload)
-                    .eq('id', existing.id);
+            if (selectedVersionId === 'new') {
+                // Determine next version number
+                const lastVersion = currentDayRecords.length > 0 ? Math.max(...currentDayRecords.map(r => r.version)) : 0;
+                payload.version = lastVersion + 1;
+                result = await supabaseClient.from('inspections').insert([payload]).select();
             } else {
-                // Insert
-                result = await supabaseClient
-                    .from('inspections')
-                    .insert([payload]);
+                // Update existing version
+                result = await supabaseClient.from('inspections').update(payload).eq('id', selectedVersionId).select();
             }
 
-            if (result.error) {
-                throw result.error;
+            if (result.error) throw result.error;
+
+            if(!silent) alert('¡Datos guardados exitosamente!');
+            
+            // Reload to update version list
+            await loadDataByDate();
+            
+            // If it was a new insert, select it
+            if (selectedVersionId === 'new' && result.data && result.data.length > 0) {
+                document.getElementById('versionSelect').value = result.data[0].id;
             }
 
-            if(!silent) alert('¡Datos guardados exitosamente en Supabase!');
             return true;
 
         } catch (error) {
@@ -481,6 +570,11 @@
 
         // 2. Gather Data for PDF
         const date = document.getElementById('date').value;
+        const selectedId = document.getElementById('versionSelect').value;
+        const record = currentDayRecords.find(r => r.id == selectedId) || {};
+        const versionNum = record.version || 'Nueva';
+        const versionDesc = document.getElementById('versionDescription').value || '';
+        
         const dayPerson = document.getElementById('dayShiftPerson').value || '-';
         const nightPerson = document.getElementById('nightShiftPerson').value || '-';
         const dayRemarks = document.getElementById('dayRemarks').value || '-';
@@ -532,6 +626,7 @@
                 <div style="text-align: center; margin-bottom: 25px;">
                     <h2 style="margin: 0 0 8px 0; font-size: 20px;">排洪井安全、环境、排水生产检查表</h2>
                     <h3 style="margin: 0; font-size: 18px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
+                    <div style="margin-top: 5px; font-size: 14px; font-weight: bold;">Versión: ${versionNum} ${versionDesc ? '(' + versionDesc + ')' : ''}</div>
                 </div>
 
                 <!-- Meta Info -->
@@ -632,7 +727,7 @@
         setTimeout(() => {
             const opt = {
                 margin:       0,
-                filename:     `Inspeccion_${date}.pdf`,
+                filename:     `Inspeccion_${date}_v${versionNum}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
                     scale: 2, 
@@ -694,7 +789,7 @@
                 statusText.innerText = `Procesando: ${record.inspection_date} (${i+1}/${data.length})`;
 
                 const pdfBlob = await generatePDFBlob(record);
-                zip.file(`Inspeccion_${record.inspection_date}.pdf`, pdfBlob);
+                zip.file(`Inspeccion_${record.inspection_date}_v${record.version}.pdf`, pdfBlob);
             }
 
             progressBar.style.width = '100%';
@@ -719,6 +814,8 @@
     // Helper to generate PDF blob for a specific record record
     async function generatePDFBlob(data) {
         const date = data.inspection_date;
+        const versionNum = data.version || '1';
+        const versionDesc = data.version_description || '';
         const dayPerson = data.day_shift_person || '-';
         const nightPerson = data.night_shift_person || '-';
         const dayRemarks = data.day_remarks || '-';
@@ -760,6 +857,7 @@
                 <div style="text-align: center; margin-bottom: 25px;">
                     <h2 style="margin: 0 0 8px 0; font-size: 20px;">排洪井安全、环境、排水生产检查表</h2>
                     <h3 style="margin: 0; font-size: 18px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
+                    <div style="margin-top: 5px; font-size: 14px; font-weight: bold;">Versión: ${versionNum} ${versionDesc ? '(' + versionDesc + ')' : ''}</div>
                 </div>
                 <div style="margin-bottom: 20px; border: 1px solid black; padding: 12px; background-color: #f8f9fa;">
                     <table style="width: 100%; font-size: 13px;">

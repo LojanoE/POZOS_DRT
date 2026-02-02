@@ -27,6 +27,8 @@ This project is a web-based application designed for managing daily safety and e
 | `day_remarks` | TEXT | Observations/Remarks for the day shift |
 | `night_remarks` | TEXT | Observations/Remarks for the night shift |
 | `checklist_data` | JSONB | Array of objects containing question IDs, statuses (OK/X/NA), and notes |
+| `version` | INTEGER | Version number of the inspection for a given date |
+| `version_description` | TEXT | Optional description of the version (e.g., "Corrected") |
 
 ### Table: `users`
 | Column | Type | Description |
@@ -47,6 +49,8 @@ This project is a web-based application designed for managing daily safety and e
 *   **Auto-Load:** Selecting a date automatically fetches existing records for that day.
 *   **Auto-Save:** Generating a PDF triggers an automatic save to the database.
 *   **PDF Export:** Generates a formatted A4 report using a temporary DOM overlay to ensure consistent rendering.
+*   **Versioning:** Supports multiple inspections for the same date. Users can create new versions or update existing ones, with optional version descriptions.
+*   **App Versioning & Cache Forcing:** Displays the current system version (v1.3.0) and includes a "Forzar actualización" feature to bypass browser cache and ensure the latest code is loaded.
 
 ## Setup & Running
 1.  **Prerequisites:** Python 3.x installed.

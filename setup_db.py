@@ -14,9 +14,16 @@ CREATE TABLE IF NOT EXISTS inspections (
     night_shift_person TEXT,
     day_remarks TEXT,
     night_remarks TEXT,
-    checklist_data JSONB
+    checklist_data JSONB,
+    version INTEGER DEFAULT 1,
+    version_description TEXT
 );
 """
+
+ALTER_TABLE_QUERIES = [
+    "ALTER TABLE inspections ADD COLUMN IF NOT EXISTS version INTEGER DEFAULT 1;",
+    "ALTER TABLE inspections ADD COLUMN IF NOT EXISTS version_description TEXT;"
+]
 
 def setup_database():
     try:
@@ -24,8 +31,11 @@ def setup_database():
         conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
         
-        print("Creating 'inspections' table if it doesn't exist...")
+        print("Creating/Updating 'inspections' table...")
         cur.execute(CREATE_TABLE_QUERY)
+        
+        for query in ALTER_TABLE_QUERIES:
+            cur.execute(query)
         
         conn.commit()
         cur.close()
