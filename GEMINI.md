@@ -4,22 +4,49 @@
 This project is a web-based application designed for managing daily safety and environmental inspections of flood wells (Pozos de Inundación). It features a bilingual interface (Chinese/Spanish) and allows users to fill out checklists, record shift personnel details, and generate PDF reports.
 
 ## Architecture
-*   **Backend:** Python (Flask). Currently acts primarily as a static file server for the frontend, though it contains legacy/alternative API endpoints.
-*   **Frontend:** HTML5, Bootstrap 5, Vanilla JavaScript.
+*   **Frontend:** Single Page Application (SPA) using HTML5, Bootstrap 5, and Vanilla JavaScript.
+    *   Interacts **directly** with Supabase using the `@supabase/supabase-js` client for authentication and CRUD operations.
+    *   Uses `html2pdf.js` for client-side report generation.
+*   **Backend:** Python (Flask) in `app.py`. 
+    *   Primarily serves `index.html`.
+    *   Contains REST API endpoints (`/api/inspection/`, `/api/save`) as alternatives to direct Supabase access, though the frontend currently prioritizes the JS SDK.
 *   **Database:** PostgreSQL hosted on Supabase.
-*   **Data Access:** The frontend interacts **directly** with Supabase using the `@supabase/supabase-js` client for authentication and data CRUD operations.
-*   **Authentication:** Custom login implemented via Supabase (checking against a `users` table).
+    *   Table `inspections`: Stores checklist results and shift metadata.
+    *   Table `users`: Stores credentials for custom login.
+*   **Authentication:** Custom login overlay that verifies credentials against the `users` table via the Supabase client.
+
+## Database Schema
+### Table: `inspections`
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `id` | SERIAL (PK) | Unique record ID |
+| `created_at` | TIMESTAMP | Auto-generated timestamp |
+| `inspection_date` | DATE | Date of the inspection (Unique per record) |
+| `day_shift_person` | TEXT | Name of the person on day shift |
+| `night_shift_person`| TEXT | Name of the person on night shift |
+| `day_remarks` | TEXT | Observations/Remarks for the day shift |
+| `night_remarks` | TEXT | Observations/Remarks for the night shift |
+| `checklist_data` | JSONB | Array of objects containing question IDs, statuses (OK/X/NA), and notes |
+
+### Table: `users`
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `username` | TEXT | Login username |
+| `password` | TEXT | Password (currently stored in plain text) |
 
 ## Key Files
-*   `app.py`: Main Flask application entry point. Serves `index.html` and contains backend API routes (currently bypassed by frontend direct DB calls).
-*   `index.html`: The complete frontend application. Contains:
-    *   UI layout (Bootstrap).
-    *   Application Logic (JavaScript): Supabase integration, form handling, and PDF generation.
-    *   Styles (CSS).
-*   `setup_db.py`: Python script to initialize the PostgreSQL database schema (`inspections` table).
-*   `setup_users.py`: Python script to manage or seed user credentials.
-*   `script.js`: (Likely legacy or supplementary) External JavaScript file.
-*   `supabase_policy.sql`: SQL file containing database policies (RLS).
+*   `app.py`: Flask server entry point.
+*   `index.html`: The main application. Contains UI, CSS, and all JavaScript logic (Supabase client, PDF generation, UI rendering).
+*   `setup_db.py`: Script to initialize the `inspections` table.
+*   `setup_users.py`: Script to manage or seed the `users` table.
+*   `style.css` & `script.js`: Supplementary files (most logic is currently in `index.html`).
+*   `supabase_policy.sql`: RLS (Row Level Security) policies for the database.
+
+## Features
+*   **Bilingual Support:** All labels and checklist items are displayed in both Chinese and Spanish.
+*   **Auto-Load:** Selecting a date automatically fetches existing records for that day.
+*   **Auto-Save:** Generating a PDF triggers an automatic save to the database.
+*   **PDF Export:** Generates a formatted A4 report using a temporary DOM overlay to ensure consistent rendering.
 
 ## Setup & Running
 1.  **Prerequisites:** Python 3.x installed.
@@ -28,9 +55,9 @@ This project is a web-based application designed for managing daily safety and e
     pip install flask psycopg2
     ```
 3.  **Database Setup:**
-    Run the setup script to ensure tables exist (if not already set up):
     ```bash
     python setup_db.py
+    python setup_users.py
     ```
 4.  **Run Application:**
     ```bash
@@ -39,11 +66,6 @@ This project is a web-based application designed for managing daily safety and e
 5.  **Access:** Open a browser and navigate to `http://localhost:5000`.
 
 ## Development Notes
-*   **Supabase Client:** The frontend uses a direct connection to Supabase. Configuration (URL and Anon Key) is embedded in `index.html`.
-*   **PDF Generation:** Uses `html2pdf.js` to render the DOM as a PDF.
-*   **Localization:** The UI is hardcoded with Chinese and Spanish text side-by-side.
-*   **Authentication:** Passwords currently appear to be stored/checked as plain text in the `users` table logic within `index.html`.
-
-## Common Tasks
-*   **Updating Checklist:** Edit the `checklistItems` array in `index.html`.
-*   **Database Schema Changes:** Modify `setup_db.py` or execute SQL directly via Supabase dashboard.
+*   **Checklist Items:** Defined in the `checklistItems` array within `index.html`. Each item has a `zh` (Chinese) and `es` (Spanish) description.
+*   **Supabase Credentials:** The `SUPABASE_URL` and `SUPABASE_KEY` (Anon Key) are hardcoded in the script section of `index.html`.
+*   **PDF Layout:** The PDF layout is constructed dynamically as an HTML string within the `exportToPDF` function.
