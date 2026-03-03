@@ -100,6 +100,49 @@
                     </div>
                 </div>
 
+                <!-- Technical Data Section (Not for PDF) -->
+                <div class="card mt-3 bg-light border-info">
+                    <div class="card-header bg-info text-white">
+                        <strong>Datos Técnicos de Bombeo y Niveles (No se incluyen en PDF)</strong>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Bomba 1 (Pump 1):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Apertura</span>
+                                    <input type="time" class="form-control" id="pump1_open">
+                                    <span class="input-group-text">Cierre</span>
+                                    <input type="time" class="form-control" id="pump1_close">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Bomba 2 (Pump 2):</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Apertura</span>
+                                    <input type="time" class="form-control" id="pump2_open">
+                                    <span class="input-group-text">Cierre</span>
+                                    <input type="time" class="form-control" id="pump2_close">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-2">
+                                <label for="water_level_before" class="form-label fw-bold">Elevación Nivel Agua (Antes):</label>
+                                <input type="number" step="0.01" class="form-control" id="water_level_before" placeholder="0.00">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="water_level_after" class="form-label fw-bold">Elevación Nivel Agua (Después):</label>
+                                <input type="number" step="0.01" class="form-control" id="water_level_after" placeholder="0.00">
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label for="mud_level" class="form-label fw-bold">Elevación del Lodo:</label>
+                                <input type="number" step="0.01" class="form-control" id="mud_level" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Buttons -->
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-2">
                     <button type="button" class="btn btn-secondary me-md-2" onclick="clearForm()">Limpiar / Clear</button>

@@ -21,3 +21,15 @@ CREATE POLICY "Permitir actualizacion publica"
 ON inspections 
 FOR UPDATE 
 USING (true);
+
+-- --- NUEVAS POLÍTICAS PARA pump_records ---
+ALTER TABLE pump_records ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Permitir lectura publica pump_records" 
+ON pump_records FOR SELECT USING (true);
+
+CREATE POLICY "Permitir insercion publica pump_records" 
+ON pump_records FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Permitir actualizacion publica pump_records" 
+ON pump_records FOR UPDATE USING (true);

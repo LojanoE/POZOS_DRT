@@ -18,6 +18,19 @@ CREATE TABLE IF NOT EXISTS inspections (
     version INTEGER DEFAULT 1,
     version_description TEXT
 );
+
+CREATE TABLE IF NOT EXISTS pump_records (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    inspection_date DATE UNIQUE NOT NULL,
+    pump1_open TIME,
+    pump1_close TIME,
+    pump2_open TIME,
+    pump2_close TIME,
+    water_level_before NUMERIC,
+    water_level_after NUMERIC,
+    mud_level NUMERIC
+);
 """
 
 ALTER_TABLE_QUERIES = [
@@ -31,7 +44,7 @@ def setup_database():
         conn = psycopg2.connect(DB_URL)
         cur = conn.cursor()
         
-        print("Creating/Updating 'inspections' table...")
+        print("Creating/Updating 'inspections' and 'pump_records' tables...")
         cur.execute(CREATE_TABLE_QUERY)
         
         for query in ALTER_TABLE_QUERIES:

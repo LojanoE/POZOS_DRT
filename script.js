@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.5.2'; // Changed status labels in PDF to SI/NO
+const APP_VERSION = '1.6.0'; // Added pump and level technical records (no PDF)
 
 function initVersion() {
     document.querySelectorAll('.app-version-text').forEach(el => {
@@ -169,6 +169,7 @@ async function loadDataByDate() {
     if (!date) return;
 
     try {
+        // 1. Load Inspections (with versions)
         const { data, error } = await supabaseClient
             .from('inspections')
             .select('*')
@@ -182,6 +183,19 @@ async function loadDataByDate() {
 
         currentDayRecords = data || [];
 
+        // 2. Load Pump Records (linked to date)
+        const { data: pumpData, error: pumpError } = await supabaseClient
+            .from('pump_records')
+            .select('*')
+            .eq('inspection_date', date)
+            .maybeSingle();
+
+        if (pumpError) {
+            console.error('Error loading pump data:', pumpError);
+        } else {
+            loadPumpFields(pumpData);
+        }
+
         if (currentDayRecords.length > 0) {
             // Load latest version by default
             loadSpecificVersion(currentDayRecords[0].id);
@@ -191,6 +205,26 @@ async function loadDataByDate() {
     } catch (error) {
         console.error('Error in loadDataByDate:', error);
     }
+}
+
+function loadPumpFields(data) {
+    if (!data) {
+        document.getElementById('pump1_open').value = '';
+        document.getElementById('pump1_close').value = '';
+        document.getElementById('pump2_open').value = '';
+        document.getElementById('pump2_close').value = '';
+        document.getElementById('water_level_before').value = '';
+        document.getElementById('water_level_after').value = '';
+        document.getElementById('mud_level').value = '';
+        return;
+    }
+    document.getElementById('pump1_open').value = data.pump1_open || '';
+    document.getElementById('pump1_close').value = data.pump1_close || '';
+    document.getElementById('pump2_open').value = data.pump2_open || '';
+    document.getElementById('pump2_close').value = data.pump2_close || '';
+    document.getElementById('water_level_before').value = data.water_level_before || '';
+    document.getElementById('water_level_after').value = data.water_level_after || '';
+    document.getElementById('mud_level').value = data.mud_level || '';
 }
 
 function loadSpecificVersion(id) {
@@ -232,6 +266,9 @@ function clearFormDataOnly() {
     
     document.querySelectorAll('#checklistBody select').forEach(el => el.value = '');
     document.querySelectorAll('#checklistBody input').forEach(el => el.value = '');
+
+    // Clear pump fields too
+    loadPumpFields(null);
 }
 
 function clearForm() {
@@ -268,6 +305,7 @@ async function saveToDatabase(silent = false) {
         const inspectionDate = document.getElementById('date').value;
         const currentRecordId = document.getElementById('currentRecordId').value;
 
+        // --- Save Inspection ---
         let payload = {
             inspection_date: inspectionDate,
             day_shift_person: document.getElementById('dayShiftPerson').value,
@@ -287,6 +325,24 @@ async function saveToDatabase(silent = false) {
         }
 
         if (result.error) throw result.error;
+
+        // --- Save Pump Records (Upsert by Date) ---
+        const pumpPayload = {
+            inspection_date: inspectionDate,
+            pump1_open: document.getElementById('pump1_open').value || null,
+            pump1_close: document.getElementById('pump1_close').value || null,
+            pump2_open: document.getElementById('pump2_open').value || null,
+            pump2_close: document.getElementById('pump2_close').value || null,
+            water_level_before: document.getElementById('water_level_before').value || null,
+            water_level_after: document.getElementById('water_level_after').value || null,
+            mud_level: document.getElementById('mud_level').value || null
+        };
+
+        const { error: pumpError } = await supabaseClient
+            .from('pump_records')
+            .upsert(pumpPayload, { onConflict: 'inspection_date' });
+
+        if (pumpError) throw pumpError;
 
         if(!silent) alert('¡Datos guardados exitosamente!');
         
