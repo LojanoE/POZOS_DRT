@@ -40,6 +40,9 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="consulta-tab" data-bs-toggle="tab" data-bs-target="#consulta" type="button" role="tab" aria-controls="consulta" aria-selected="false">Consulta y Lote</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="bombas-tab" data-bs-toggle="tab" data-bs-target="#bombas" type="button" role="tab" aria-controls="bombas" aria-selected="false">Información de Bombas</button>
+        </li>
     </ul>
 
     <!-- Tab Content -->
@@ -233,6 +236,57 @@
                     <div id="queryProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
                 </div>
                 <p id="queryStatusText" class="mt-2 text-center text-muted small"></p>
+            </div>
+        </div>
+
+        <!-- Tab: Información de Bombas -->
+        <div class="tab-pane fade" id="bombas" role="tabpanel" aria-labelledby="bombas-tab">
+            <h1>
+                <span class="zh-text">泵和水位信息</span>
+                <span class="es-text">Información de Bombas y Niveles</span>
+            </h1>
+
+            <div class="row form-section">
+                <div class="col-md-5 mb-3">
+                    <label for="pumpStartDate" class="form-label">Desde (Fecha):</label>
+                    <input type="date" class="form-control" id="pumpStartDate">
+                </div>
+                <div class="col-md-5 mb-3">
+                    <label for="pumpEndDate" class="form-label">Hasta (Fecha):</label>
+                    <input type="date" class="form-control" id="pumpEndDate">
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100" onclick="loadPumpRecordsReport()">Buscar</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered table-sm" style="font-size: 0.8rem;">
+                    <thead class="table-info">
+                        <tr>
+                            <th rowspan="2" class="align-middle text-center">Fecha</th>
+                            <th colspan="5" class="text-center bg-light text-dark">DÍA (白班)</th>
+                            <th colspan="5" class="text-center bg-dark text-white">NOCHE (夜班)</th>
+                        </tr>
+                        <tr>
+                            <th>Apertura</th>
+                            <th>Cierre</th>
+                            <th>N. Antes</th>
+                            <th>N. Después</th>
+                            <th>Lodo</th>
+                            <th>Apertura</th>
+                            <th>Cierre</th>
+                            <th>N. Antes</th>
+                            <th>N. Después</th>
+                            <th>Lodo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pumpReportBody">
+                        <tr>
+                            <td colspan="11" class="text-center text-muted">Seleccione un rango y presione buscar.</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
