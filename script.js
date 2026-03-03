@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.8.1'; // Auto-load last 2 weeks in chart tab
+const APP_VERSION = '1.9.0'; // Added 'Cantidad' field to pump records
 
 let levelChartInstance = null;
 
@@ -147,18 +147,15 @@ document.addEventListener('DOMContentLoaded', () => {
         dateInput.addEventListener('change', loadDataByDate);
     }
 
-    // Auto-load last 2 weeks when entering Chart tab
     const graficaTabEl = document.getElementById('grafica-tab');
     if (graficaTabEl) {
         graficaTabEl.addEventListener('shown.bs.tab', () => {
             const startInput = document.getElementById('chartStartDate');
             const endInput = document.getElementById('chartEndDate');
-            
             if (startInput && endInput && (!startInput.value || !endInput.value)) {
                 const today = new Date();
                 const twoWeeksAgo = new Date();
                 twoWeeksAgo.setDate(today.getDate() - 14);
-                
                 startInput.valueAsDate = twoWeeksAgo;
                 endInput.valueAsDate = today;
             }
@@ -199,8 +196,8 @@ async function loadDataByDate() {
 }
 
 function loadPumpFields(data) {
-    const fields = ['day_pump_open', 'day_pump_close', 'day_water_level_before', 'day_water_level_after', 'day_mud_level',
-                  'night_pump_open', 'night_pump_close', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'];
+    const fields = ['day_pump_open', 'day_pump_close', 'day_pump_quantity', 'day_water_level_before', 'day_water_level_after', 'day_mud_level',
+                  'night_pump_open', 'night_pump_close', 'night_pump_quantity', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'];
     fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) el.value = (data && data[f]) ? data[f] : '';
@@ -288,8 +285,8 @@ async function saveToDatabase(silent = false) {
         if (result.error) throw result.error;
 
         const pumpPayload = { inspection_date: inspectionDate };
-        ['day_pump_open', 'day_pump_close', 'day_water_level_before', 'day_water_level_after', 'day_mud_level',
-         'night_pump_open', 'night_pump_close', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'].forEach(f => {
+        ['day_pump_open', 'day_pump_close', 'day_pump_quantity', 'day_water_level_before', 'day_water_level_after', 'day_mud_level',
+         'night_pump_open', 'night_pump_close', 'night_pump_quantity', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'].forEach(f => {
             const el = document.getElementById(f);
             if (el) {
                 const val = el.value;
@@ -383,7 +380,6 @@ async function exportRangeToZip() {
     const statusText = document.getElementById('exportStatusText');
 
     if (!start || !end) return alert("Seleccione fechas.");
-    
     statusDiv.style.display = 'block';
     progressBar.style.width = '0%';
     statusText.innerText = "Consultando...";
@@ -391,11 +387,7 @@ async function exportRangeToZip() {
     try {
         const { data, error } = await supabaseClient.from('inspections').select('*').gte('inspection_date', start).lte('inspection_date', end).order('inspection_date', { ascending: true });
         if (error) throw error;
-        if (!data.length) {
-            alert("Sin registros.");
-            statusDiv.style.display = 'none';
-            return;
-        }
+        if (!data.length) { alert("Sin registros."); statusDiv.style.display = 'none'; return; }
 
         const zip = new JSZip();
         for (let i = 0; i < data.length; i++) {
@@ -405,7 +397,6 @@ async function exportRangeToZip() {
             const pdfBlob = await generatePDFBlob(data[i]);
             zip.file(`Inspeccion_${data[i].inspection_date}_v${data[i].version}.pdf`, pdfBlob);
         }
-        
         statusText.innerText = "Empaquetando ZIP...";
         const content = await zip.generateAsync({ type: "blob" });
         saveAs(content, `Inspecciones_${start}_${end}.zip`);
@@ -417,52 +408,11 @@ async function exportRangeToZip() {
 async function generatePDFBlob(data) {
     const tableRows = (data.checklist_data || []).map(item => {
         const fmt = (v) => v === 'OK' ? '√ (SI)' : (v === 'X' ? 'X (NO)' : (v === 'NA' ? 'N/A' : '-'));
-        return `
-            <tr>
-                <td style="border: 1px solid black; padding: 5px;">
-                    <div style="font-size: 10px;">${item.question_zh}</div>
-                    <div style="font-weight: bold; font-size: 11px;">${item.question_es}</div>
-                </td>
-                <td style="border: 1px solid black; padding: 5px; text-align: center;">
-                    <div style="font-weight: bold;">${fmt(item.day_status)}</div>
-                    ${item.day_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.day_note}</div>` : ''}
-                </td>
-                <td style="border: 1px solid black; padding: 5px; text-align: center;">
-                    <div style="font-weight: bold;">${fmt(item.night_status)}</div>
-                    ${item.night_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.night_note}</div>` : ''}
-                </td>
-            </tr>`;
+        return `<tr><td style="border: 1px solid black; padding: 5px;"><div style="font-size: 10px;">${item.question_zh}</div><div style="font-weight: bold; font-size: 11px;">${item.question_es}</div></td><td style="border: 1px solid black; padding: 5px; text-align: center;"><div style="font-weight: bold;">${fmt(item.day_status)}</div>${item.day_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.day_note}</div>` : ''}</td><td style="border: 1px solid black; padding: 5px; text-align: center;"><div style="font-weight: bold;">${fmt(item.night_status)}</div>${item.night_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.night_note}</div>` : ''}</td></tr>`;
     }).join('');
 
-    const html = `
-        <div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;">
-            <div style="text-align: center; margin-bottom: 25px;">
-                <h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2>
-                <h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
-            </div>
-            <div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;">
-                <table style="width: 100%; font-size: 12px;">
-                    <tr><td><strong>Fecha:</strong> ${data.inspection_date}</td><td><strong>Día:</strong> ${data.day_shift_person || '-'}</td><td><strong>Noche:</strong> ${data.night_shift_person || '-'}</td></tr>
-                </table>
-            </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
-                <thead style="background: #eee;">
-                    <tr><th style="border: 1px solid black; padding: 8px;">Artículos</th><th style="border: 1px solid black;">Día</th><th style="border: 1px solid black;">Noche</th></tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-            </table>
-            <div style="font-size: 11px;">
-                <div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>Obs. Día:</strong> ${data.day_remarks || '-'}</div>
-                <div style="border: 1px solid black; padding: 5px;"><strong>Obs. Noche:</strong> ${data.night_remarks || '-'}</div>
-            </div>
-        </div>`;
-
-    const worker = html2pdf().set({
-        margin: 0,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    });
+    const html = `<div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>Fecha:</strong> ${data.inspection_date}</td><td><strong>Día:</strong> ${data.day_shift_person || '-'}</td><td><strong>Noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">Artículos</th><th style="border: 1px solid black;">Día</th><th style="border: 1px solid black;">Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
+    const worker = html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } });
     return await worker.from(html).output('blob');
 }
 
@@ -471,7 +421,6 @@ async function performQuery() {
     const start = document.getElementById('queryStartDate').value;
     const end = document.getElementById('queryEndDate').value;
     if (!start || !end) return alert("Seleccione fechas.");
-
     try {
         const { data, error } = await supabaseClient.from('inspections').select('*').gte('inspection_date', start).lte('inspection_date', end).order('inspection_date', { ascending: false });
         if (error) throw error;
@@ -509,15 +458,15 @@ async function loadPumpRecordsReport() {
     const body = document.getElementById('pumpReportBody');
     if (!start || !end) return alert("Seleccione fechas.");
 
-    body.innerHTML = '<tr><td colspan="11" class="text-center">Buscando...</td></tr>';
+    body.innerHTML = '<tr><td colspan="13" class="text-center">Buscando...</td></tr>';
     try {
         const { data, error } = await supabaseClient.from('pump_records').select('*').gte('inspection_date', start).lte('inspection_date', end).order('inspection_date', { ascending: false });
         if (error) throw error;
         body.innerHTML = '';
-        if (!data.length) body.innerHTML = '<tr><td colspan="11" class="text-center">Sin datos</td></tr>';
+        if (!data.length) body.innerHTML = '<tr><td colspan="13" class="text-center">Sin datos</td></tr>';
         else data.forEach(r => {
             const row = document.createElement('tr');
-            row.innerHTML = `<td class="text-center fw-bold">${r.inspection_date}</td><td>${r.day_pump_open || '-'}</td><td>${r.day_pump_close || '-'}</td><td>${r.day_water_level_before || '-'}</td><td>${r.day_water_level_after || '-'}</td><td>${r.day_mud_level || '-'}</td><td class="bg-dark text-white">${r.night_pump_open || '-'}</td><td class="bg-dark text-white">${r.night_pump_close || '-'}</td><td class="bg-dark text-white">${r.night_water_level_before || '-'}</td><td class="bg-dark text-white">${r.night_water_level_after || '-'}</td><td class="bg-dark text-white">${r.night_mud_level || '-'}</td>`;
+            row.innerHTML = `<td class="text-center fw-bold">${r.inspection_date}</td><td>${r.day_pump_open || '-'}</td><td>${r.day_pump_close || '-'}</td><td>${r.day_pump_quantity || '-'}</td><td>${r.day_water_level_before || '-'}</td><td>${r.day_water_level_after || '-'}</td><td>${r.day_mud_level || '-'}</td><td class="bg-dark text-white">${r.night_pump_open || '-'}</td><td class="bg-dark text-white">${r.night_pump_close || '-'}</td><td class="bg-dark text-white">${r.night_pump_quantity || '-'}</td><td class="bg-dark text-white">${r.night_water_level_before || '-'}</td><td class="bg-dark text-white">${r.night_water_level_after || '-'}</td><td class="bg-dark text-white">${r.night_mud_level || '-'}</td>`;
             body.appendChild(row);
         });
     } catch (err) { alert(err.message); }
@@ -528,55 +477,15 @@ async function renderWaterLevelChart() {
     const end = document.getElementById('chartEndDate').value;
     const canvas = document.getElementById('waterLevelChart');
     if (!start || !end || !canvas) return alert("Seleccione fechas.");
-    
     const ctx = canvas.getContext('2d');
-
     try {
         const { data, error } = await supabaseClient.from('pump_records').select('inspection_date, day_water_level_after, night_water_level_after').gte('inspection_date', start).lte('inspection_date', end).order('inspection_date', { ascending: true });
         if (error) throw error;
         if (!data.length) return alert("Sin datos.");
-
         const labels = data.map(r => r.inspection_date);
         const dayLevels = data.map(r => r.day_water_level_after);
         const nightLevels = data.map(r => r.night_water_level_after);
-
         if (levelChartInstance) levelChartInstance.destroy();
-
-        levelChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-                        label: 'Nivel Día (m)',
-                        data: dayLevels,
-                        borderColor: '#0dcaf0',
-                        backgroundColor: 'rgba(13, 202, 240, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true,
-                        spanGaps: true
-                    },
-                    {
-                        label: 'Nivel Noche (m)',
-                        data: nightLevels,
-                        borderColor: '#212529',
-                        backgroundColor: 'rgba(33, 37, 41, 0.05)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true,
-                        spanGaps: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { title: { display: true, text: 'Elevación (m)' } },
-                    x: { title: { display: true, text: 'Fecha' } }
-                }
-            }
-        });
+        levelChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Nivel Día (m)', data: dayLevels, borderColor: '#0dcaf0', backgroundColor: 'rgba(13, 202, 240, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }, { label: 'Nivel Noche (m)', data: nightLevels, borderColor: '#212529', backgroundColor: 'rgba(33, 37, 41, 0.05)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Elevación (m)' } }, x: { title: { display: true, text: 'Fecha' } } } } });
     } catch (err) { console.error(err); alert(err.message); }
 }

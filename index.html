@@ -133,6 +133,11 @@
                                         <td><input type="time" class="form-control form-control-sm" id="night_pump_close"></td>
                                     </tr>
                                     <tr>
+                                        <td><strong>Bomba - Cantidad</strong></td>
+                                        <td><input type="number" step="0.01" class="form-control form-control-sm" id="day_pump_quantity" placeholder="0.00"></td>
+                                        <td><input type="number" step="0.01" class="form-control form-control-sm" id="night_pump_quantity" placeholder="0.00"></td>
+                                    </tr>
+                                    <tr>
                                         <td><strong>Elevación Nivel Agua (Antes)</strong></td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" id="day_water_level_before" placeholder="0.00"></td>
                                         <td><input type="number" step="0.01" class="form-control form-control-sm" id="night_water_level_before" placeholder="0.00"></td>
@@ -268,17 +273,19 @@
                     <thead class="table-info">
                         <tr>
                             <th rowspan="2" class="align-middle text-center">Fecha</th>
-                            <th colspan="5" class="text-center bg-light text-dark">DÍA (白班)</th>
-                            <th colspan="5" class="text-center bg-dark text-white">NOCHE (夜班)</th>
+                            <th colspan="6" class="text-center bg-light text-dark">DÍA (白班)</th>
+                            <th colspan="6" class="text-center bg-dark text-white">NOCHE (夜班)</th>
                         </tr>
                         <tr>
                             <th>Apertura</th>
                             <th>Cierre</th>
+                            <th>Cant.</th>
                             <th>N. Antes</th>
                             <th>N. Después</th>
                             <th>Lodo</th>
                             <th>Apertura</th>
                             <th>Cierre</th>
+                            <th>Cant.</th>
                             <th>N. Antes</th>
                             <th>N. Después</th>
                             <th>Lodo</th>

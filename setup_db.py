@@ -27,11 +27,13 @@ CREATE TABLE pump_records (
     inspection_date DATE UNIQUE NOT NULL,
     day_pump_open TIME,
     day_pump_close TIME,
+    day_pump_quantity NUMERIC,
     day_water_level_before NUMERIC,
     day_water_level_after NUMERIC,
     day_mud_level NUMERIC,
     night_pump_open TIME,
     night_pump_close TIME,
+    night_pump_quantity NUMERIC,
     night_water_level_before NUMERIC,
     night_water_level_after NUMERIC,
     night_mud_level NUMERIC
