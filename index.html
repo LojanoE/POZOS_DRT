@@ -266,7 +266,7 @@
 
 <script>
     // --- APPLICATION VERSIONING ---
-    const APP_VERSION = '1.5.0'; // Removed version and versionDescription fields from UI
+    const APP_VERSION = '1.5.1'; // Fixed PDF filename error
 
     function initVersion() {
         document.querySelectorAll('.app-version-text').forEach(el => {
@@ -729,7 +729,7 @@
         setTimeout(() => {
             const opt = {
                 margin:       0,
-                filename:     `Inspeccion_${date}_v${versionNum}.pdf`,
+                filename:     `Inspeccion_${date}.pdf`,
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { 
                     scale: 2, 
@@ -791,7 +791,8 @@
                 statusText.innerText = `Procesando: ${record.inspection_date} (${i+1}/${data.length})`;
 
                 const pdfBlob = await generatePDFBlob(record);
-                zip.file(`Inspeccion_${record.inspection_date}_v${record.version}.pdf`, pdfBlob);
+                const fileName = `Inspeccion_${record.inspection_date}${record.version ? '_v' + record.version : ''}.pdf`;
+                zip.file(fileName, pdfBlob);
             }
 
             progressBar.style.width = '100%';
@@ -993,7 +994,8 @@
 
         try {
             const blob = await generatePDFBlob(record);
-            saveAs(blob, `Inspeccion_${record.inspection_date}_v${record.version}.pdf`);
+            const fileName = `Inspeccion_${record.inspection_date}${record.version ? '_v' + record.version : ''}.pdf`;
+            saveAs(blob, fileName);
         } catch (err) {
             console.error(err);
             alert("Error al generar PDF: " + err.message);
@@ -1022,7 +1024,8 @@
                 statusText.innerText = `Procesando: ${record.inspection_date} (${i+1}/${selectedIds.length})`;
 
                 const pdfBlob = await generatePDFBlob(record);
-                zip.file(`Inspeccion_${record.inspection_date}_v${record.version}.pdf`, pdfBlob);
+                const fileName = `Inspeccion_${record.inspection_date}${record.version ? '_v' + record.version : ''}.pdf`;
+                zip.file(fileName, pdfBlob);
             }
 
             progressBar.style.width = '100%';

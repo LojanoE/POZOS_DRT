@@ -46,11 +46,11 @@ This project is a web-based application designed for managing daily safety and e
 
 ## Features
 *   **Bilingual Support:** All labels and checklist items are displayed in both Chinese and Spanish.
-*   **Auto-Load:** Selecting a date automatically fetches existing records for that day.
-*   **Auto-Save:** Generating a PDF triggers an automatic save to the database.
+*   **Auto-Load & Auto-Save:** Selecting a date automatically fetches existing records for that day (defaulting to the latest). Generating a PDF triggers an automatic save to the database.
 *   **PDF Export:** Generates a formatted A4 report using a temporary DOM overlay to ensure consistent rendering.
-*   **Versioning:** Supports multiple inspections for the same date. Users can create new versions or update existing ones, with optional version descriptions.
-*   **App Versioning & Cache Forcing:** Displays the current system version (v1.3.0) and includes a "Forzar actualización" feature to bypass browser cache and ensure the latest code is loaded.
+*   **Background Versioning:** Supports multiple inspections for the same date in the database. The UI has been simplified to automatically handle the latest record, keeping previous versions accessible via the Query tab.
+*   **Query & Batch Print:** A dedicated "Consulta y Lote" tab allows users to search historical records by date range, view specific past inspections, and batch-download multiple reports as a single ZIP file.
+*   **App Versioning & Cache Forcing:** Displays the current system version (v1.5.0) and includes a "Forzar actualización" feature to bypass browser cache and ensure the latest code is loaded.
 
 ## Setup & Running
 1.  **Prerequisites:** Python 3.x installed.
