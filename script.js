@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.6.0'; // Added pump and level technical records (no PDF)
+const APP_VERSION = '1.6.1'; // Consolidate to one pump with day/night shift data
 
 function initVersion() {
     document.querySelectorAll('.app-version-text').forEach(el => {
@@ -209,22 +209,28 @@ async function loadDataByDate() {
 
 function loadPumpFields(data) {
     if (!data) {
-        document.getElementById('pump1_open').value = '';
-        document.getElementById('pump1_close').value = '';
-        document.getElementById('pump2_open').value = '';
-        document.getElementById('pump2_close').value = '';
-        document.getElementById('water_level_before').value = '';
-        document.getElementById('water_level_after').value = '';
-        document.getElementById('mud_level').value = '';
+        document.getElementById('day_pump_open').value = '';
+        document.getElementById('day_pump_close').value = '';
+        document.getElementById('day_water_level_before').value = '';
+        document.getElementById('day_water_level_after').value = '';
+        document.getElementById('day_mud_level').value = '';
+        document.getElementById('night_pump_open').value = '';
+        document.getElementById('night_pump_close').value = '';
+        document.getElementById('night_water_level_before').value = '';
+        document.getElementById('night_water_level_after').value = '';
+        document.getElementById('night_mud_level').value = '';
         return;
     }
-    document.getElementById('pump1_open').value = data.pump1_open || '';
-    document.getElementById('pump1_close').value = data.pump1_close || '';
-    document.getElementById('pump2_open').value = data.pump2_open || '';
-    document.getElementById('pump2_close').value = data.pump2_close || '';
-    document.getElementById('water_level_before').value = data.water_level_before || '';
-    document.getElementById('water_level_after').value = data.water_level_after || '';
-    document.getElementById('mud_level').value = data.mud_level || '';
+    document.getElementById('day_pump_open').value = data.day_pump_open || '';
+    document.getElementById('day_pump_close').value = data.day_pump_close || '';
+    document.getElementById('day_water_level_before').value = data.day_water_level_before || '';
+    document.getElementById('day_water_level_after').value = data.day_water_level_after || '';
+    document.getElementById('day_mud_level').value = data.day_mud_level || '';
+    document.getElementById('night_pump_open').value = data.night_pump_open || '';
+    document.getElementById('night_pump_close').value = data.night_pump_close || '';
+    document.getElementById('night_water_level_before').value = data.night_water_level_before || '';
+    document.getElementById('night_water_level_after').value = data.night_water_level_after || '';
+    document.getElementById('night_mud_level').value = data.night_mud_level || '';
 }
 
 function loadSpecificVersion(id) {
@@ -329,13 +335,16 @@ async function saveToDatabase(silent = false) {
         // --- Save Pump Records (Upsert by Date) ---
         const pumpPayload = {
             inspection_date: inspectionDate,
-            pump1_open: document.getElementById('pump1_open').value || null,
-            pump1_close: document.getElementById('pump1_close').value || null,
-            pump2_open: document.getElementById('pump2_open').value || null,
-            pump2_close: document.getElementById('pump2_close').value || null,
-            water_level_before: document.getElementById('water_level_before').value || null,
-            water_level_after: document.getElementById('water_level_after').value || null,
-            mud_level: document.getElementById('mud_level').value || null
+            day_pump_open: document.getElementById('day_pump_open').value || null,
+            day_pump_close: document.getElementById('day_pump_close').value || null,
+            day_water_level_before: document.getElementById('day_water_level_before').value || null,
+            day_water_level_after: document.getElementById('day_water_level_after').value || null,
+            day_mud_level: document.getElementById('day_mud_level').value || null,
+            night_pump_open: document.getElementById('night_pump_open').value || null,
+            night_pump_close: document.getElementById('night_pump_close').value || null,
+            night_water_level_before: document.getElementById('night_water_level_before').value || null,
+            night_water_level_after: document.getElementById('night_water_level_after').value || null,
+            night_mud_level: document.getElementById('night_mud_level').value || null
         };
 
         const { error: pumpError } = await supabaseClient

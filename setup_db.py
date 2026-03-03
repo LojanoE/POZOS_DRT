@@ -19,17 +19,22 @@ CREATE TABLE IF NOT EXISTS inspections (
     version_description TEXT
 );
 
-CREATE TABLE IF NOT EXISTS pump_records (
+DROP TABLE IF EXISTS pump_records;
+
+CREATE TABLE pump_records (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     inspection_date DATE UNIQUE NOT NULL,
-    pump1_open TIME,
-    pump1_close TIME,
-    pump2_open TIME,
-    pump2_close TIME,
-    water_level_before NUMERIC,
-    water_level_after NUMERIC,
-    mud_level NUMERIC
+    day_pump_open TIME,
+    day_pump_close TIME,
+    day_water_level_before NUMERIC,
+    day_water_level_after NUMERIC,
+    day_mud_level NUMERIC,
+    night_pump_open TIME,
+    night_pump_close TIME,
+    night_water_level_before NUMERIC,
+    night_water_level_after NUMERIC,
+    night_mud_level NUMERIC
 );
 """
 
