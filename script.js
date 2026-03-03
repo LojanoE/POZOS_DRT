@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.8.1'; // Added 'Gráfica de Niveles' tab with Chart.js
+const APP_VERSION = '1.8.1'; // Auto-load last 2 weeks in chart tab
 
 let levelChartInstance = null;
 
@@ -145,6 +145,25 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dateInput) {
         dateInput.valueAsDate = new Date();
         dateInput.addEventListener('change', loadDataByDate);
+    }
+
+    // Auto-load last 2 weeks when entering Chart tab
+    const graficaTabEl = document.getElementById('grafica-tab');
+    if (graficaTabEl) {
+        graficaTabEl.addEventListener('shown.bs.tab', () => {
+            const startInput = document.getElementById('chartStartDate');
+            const endInput = document.getElementById('chartEndDate');
+            
+            if (startInput && endInput && (!startInput.value || !endInput.value)) {
+                const today = new Date();
+                const twoWeeksAgo = new Date();
+                twoWeeksAgo.setDate(today.getDate() - 14);
+                
+                startInput.valueAsDate = twoWeeksAgo;
+                endInput.valueAsDate = today;
+            }
+            renderWaterLevelChart();
+        });
     }
 });
 

@@ -1,75 +1,67 @@
 # Project: POZOS_DRT (Flood Well Inspection App)
 
 ## Overview
-This project is a web-based application designed for managing daily safety and environmental inspections of flood wells (Pozos de Inundación). It features a bilingual interface (Chinese/Spanish) and allows users to fill out checklists, record shift personnel details, and generate PDF reports.
+This project is a web-based application designed for managing daily safety and environmental inspections of flood wells (Pozos de Inundación). It features a bilingual interface (Chinese/Spanish) and allows users to fill out checklists, record shift personnel details, track technical pump data, and generate reports/visualizations.
 
 ## Architecture
 *   **Frontend:** Single Page Application (SPA) using HTML5, Bootstrap 5, and Vanilla JavaScript.
-    *   Interacts **directly** with Supabase using the `@supabase/supabase-js` client for authentication and CRUD operations.
-    *   Uses `html2pdf.js` for client-side report generation.
-*   **Backend:** Python (Flask) in `app.py`. 
-    *   Primarily serves `index.html`.
-    *   Contains REST API endpoints (`/api/inspection/`, `/api/save`) as alternatives to direct Supabase access, though the frontend currently prioritizes the JS SDK.
+    *   Interacts **directly** with Supabase using the `@supabase/supabase-js` client.
+    *   Uses `html2pdf.js` for PDF generation.
+    *   Uses `Chart.js` for level trend visualization.
+    *   Uses `JSZip` for batch report packaging.
+*   **Backend:** Python (Flask) in `app.py`.
 *   **Database:** PostgreSQL hosted on Supabase.
-    *   Table `inspections`: Stores checklist results and shift metadata.
-    *   Table `users`: Stores credentials for custom login.
-*   **Authentication:** Custom login overlay that verifies credentials against the `users` table via the Supabase client.
 
 ## Database Schema
+
 ### Table: `inspections`
 | Column | Type | Description |
 | :--- | :--- | :--- |
 | `id` | SERIAL (PK) | Unique record ID |
-| `created_at` | TIMESTAMP | Auto-generated timestamp |
-| `inspection_date` | DATE | Date of the inspection (Unique per record) |
+| `inspection_date` | DATE | Date of the inspection |
 | `day_shift_person` | TEXT | Name of the person on day shift |
 | `night_shift_person`| TEXT | Name of the person on night shift |
 | `day_remarks` | TEXT | Observations/Remarks for the day shift |
 | `night_remarks` | TEXT | Observations/Remarks for the night shift |
-| `checklist_data` | JSONB | Array of objects containing question IDs, statuses (OK/X/NA), and notes |
-| `version` | INTEGER | Version number of the inspection for a given date |
-| `version_description` | TEXT | Optional description of the version (e.g., "Corrected") |
+| `checklist_data` | JSONB | Array of objects (Question ID, status SI/NO, notes) |
+| `version` | INTEGER | Version number per date |
+
+### Table: `pump_records`
+Technical data for the single pump and elevation levels (stored per date).
+| Column | Type | Description |
+| :--- | :--- | :--- |
+| `inspection_date` | DATE (Unique) | Date link |
+| `day_pump_open` | TIME | Pump opening time (Day) |
+| `day_pump_close` | TIME | Pump closing time (Day) |
+| `day_water_level_before` | NUMERIC | Water level before shift (Day) |
+| `day_water_level_after` | NUMERIC | Water level after shift (Day) |
+| `day_mud_level` | NUMERIC | Mud level (Day) |
+| `night_pump_open` | TIME | Pump opening time (Night) |
+| `night_pump_close` | TIME | Pump closing time (Night) |
+| `night_water_level_before`| NUMERIC | Water level before shift (Night) |
+| `night_water_level_after` | NUMERIC | Water level after shift (Night) |
+| `night_mud_level` | NUMERIC | Mud level (Night) |
 
 ### Table: `users`
 | Column | Type | Description |
 | :--- | :--- | :--- |
 | `username` | TEXT | Login username |
-| `password` | TEXT | Password (currently stored in plain text) |
+| `password` | TEXT | Password (plain text) |
 
-## Key Files
-*   `app.py`: Flask server entry point.
-*   `index.html`: The main application. Contains UI, CSS, and all JavaScript logic (Supabase client, PDF generation, UI rendering).
-*   `setup_db.py`: Script to initialize the `inspections` table.
-*   `setup_users.py`: Script to manage or seed the `users` table.
-*   `style.css` & `script.js`: Supplementary files (most logic is currently in `index.html`).
-*   `supabase_policy.sql`: RLS (Row Level Security) policies for the database.
+## Key Features
+*   **Bilingual Support:** Chinese/Spanish for all checklist items and labels.
+*   **5-Tab Navigation:**
+    1.  **Verificación:** Main form for checklist and technical data.
+    2.  **Reportes (ZIP):** Quick date range ZIP export.
+    3.  **Consulta y Lote:** Historical search, viewing past records, and selective ZIP export.
+    4.  **Información de Bombas:** Tabular view of all technical pump/level data.
+    5.  **Gráfica de Niveles:** Visual trend curves for water levels (Day vs Night).
+*   **PDF Export:** Professional A4 report generation (Technical data is stored but excluded from PDF).
+*   **Versioning:** Automatic version incrementing for multiple entries on the same date.
 
-## Features
-*   **Bilingual Support:** All labels and checklist items are displayed in both Chinese and Spanish.
-*   **Auto-Load & Auto-Save:** Selecting a date automatically fetches existing records for that day (defaulting to the latest). Generating a PDF triggers an automatic save to the database.
-*   **PDF Export:** Generates a formatted A4 report using a temporary DOM overlay to ensure consistent rendering.
-*   **Background Versioning:** Supports multiple inspections for the same date in the database. The UI has been simplified to automatically handle the latest record, keeping previous versions accessible via the Query tab.
-*   **Query & Batch Print:** A dedicated "Consulta y Lote" tab allows users to search historical records by date range, view specific past inspections, and batch-download multiple reports as a single ZIP file.
-*   **App Versioning & Cache Forcing:** Displays the current system version (v1.5.0) and includes a "Forzar actualización" feature to bypass browser cache and ensure the latest code is loaded.
-
-## Setup & Running
-1.  **Prerequisites:** Python 3.x installed.
-2.  **Install Dependencies:**
-    ```bash
-    pip install flask psycopg2
-    ```
-3.  **Database Setup:**
-    ```bash
-    python setup_db.py
-    python setup_users.py
-    ```
-4.  **Run Application:**
-    ```bash
-    python app.py
-    ```
-5.  **Access:** Open a browser and navigate to `http://localhost:5000`.
-
-## Development Notes
-*   **Checklist Items:** Defined in the `checklistItems` array within `index.html`. Each item has a `zh` (Chinese) and `es` (Spanish) description.
-*   **Supabase Credentials:** The `SUPABASE_URL` and `SUPABASE_KEY` (Anon Key) are hardcoded in the script section of `index.html`.
-*   **PDF Layout:** The PDF layout is constructed dynamically as an HTML string within the `exportToPDF` function.
+## Version History
+*   **v1.8.0:** Added "Gráfica de Niveles" tab using Chart.js.
+*   **v1.7.0:** Added "Información de Bombas" tab with tabular technical reports.
+*   **v1.6.1:** Consolidated to a single pump with Day/Night shift fields.
+*   **v1.6.0:** Initial integration of technical records (pumps/levels).
+*   **v1.5.2:** Changed status labels in PDF to SI/NO.
