@@ -332,8 +332,8 @@ async function exportToPDF() {
         const nightNoteInput = document.querySelector(`[name="night_note_${item.id}"]`);
 
         const formatStatus = (val) => {
-            if (val === 'OK') return '√ (Normal)';
-            if (val === 'X') return 'X (Anormal)';
+            if (val === 'OK') return '√ (SI)';
+            if (val === 'X') return 'X (NO)';
             if (val === 'NA') return 'N/A';
             return '-';
         };
