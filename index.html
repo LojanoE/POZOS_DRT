@@ -109,27 +109,20 @@
             </h1>
 
             <form id="inspectionForm">
+                <!-- Hidden input for current record ID -->
+                <input type="hidden" id="currentRecordId" value="">
+                
                 <!-- Metadata Section -->
                 <div class="row form-section">
-                    <div class="col-md-3 mb-1">
+                    <div class="col-md-4 mb-1">
                         <label for="date" class="form-label">日期 Fecha:</label>
                         <input type="date" class="form-control" id="date" required>
                     </div>
-                    <div class="col-md-2 mb-1">
-                        <label for="versionSelect" class="form-label">版本 Versión:</label>
-                        <select class="form-select" id="versionSelect">
-                            <option value="new">+ Nueva Versión</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3 mb-1">
-                        <label for="versionDescription" class="form-label">版本说明 Detalle Versión:</label>
-                        <input type="text" class="form-control" id="versionDescription" placeholder="Ej: Original, Corregido...">
-                    </div>
-                    <div class="col-md-2 mb-1">
+                    <div class="col-md-4 mb-1">
                         <label for="dayShiftPerson" class="form-label">白班 Dia:</label>
                         <input type="text" class="form-control" id="dayShiftPerson">
                     </div>
-                    <div class="col-md-2 mb-1">
+                    <div class="col-md-4 mb-1">
                         <label for="nightShiftPerson" class="form-label">夜班 Noche:</label>
                         <input type="text" class="form-control" id="nightShiftPerson">
                     </div>
@@ -273,7 +266,7 @@
 
 <script>
     // --- APPLICATION VERSIONING ---
-    const APP_VERSION = '1.4.0'; // Added Consultation and Batch Printing features
+    const APP_VERSION = '1.5.0'; // Removed version and versionDescription fields from UI
 
     function initVersion() {
         document.querySelectorAll('.app-version-text').forEach(el => {
@@ -421,16 +414,6 @@
     // Listen for date changes
     dateInput.addEventListener('change', loadDataByDate);
 
-    // Listen for version changes
-    const versionSelect = document.getElementById('versionSelect');
-    versionSelect.addEventListener('change', (e) => {
-        if (e.target.value === 'new') {
-            clearFormDataOnly();
-        } else {
-            loadSpecificVersion(e.target.value);
-        }
-    });
-
     // Global variable to store current records for the date
     let currentDayRecords = [];
 
@@ -452,7 +435,6 @@
             }
 
             currentDayRecords = data || [];
-            updateVersionSelector();
 
             if (currentDayRecords.length > 0) {
                 // Load latest version by default
@@ -465,37 +447,15 @@
         }
     }
 
-    function updateVersionSelector() {
-        const select = document.getElementById('versionSelect');
-        const currentVal = select.value;
-        select.innerHTML = '<option value="new">+ Nueva Versión</option>';
-        
-        currentDayRecords.forEach(rec => {
-            const opt = document.createElement('option');
-            opt.value = rec.id;
-            opt.innerText = `v${rec.version}${rec.version_description ? ' - ' + rec.version_description : ''}`;
-            select.appendChild(opt);
-        });
-        
-        // Try to keep previous selection if it still exists
-        if (Array.from(select.options).some(opt => opt.value === currentVal)) {
-            select.value = currentVal;
-        } else if (currentDayRecords.length > 0) {
-            select.value = currentDayRecords[0].id;
-        } else {
-            select.value = 'new';
-        }
-    }
-
     function loadSpecificVersion(id) {
         const data = currentDayRecords.find(r => r.id == id);
         if (!data) return;
 
+        document.getElementById('currentRecordId').value = data.id;
         document.getElementById('dayShiftPerson').value = data.day_shift_person || '';
         document.getElementById('nightShiftPerson').value = data.night_shift_person || '';
         document.getElementById('dayRemarks').value = data.day_remarks || '';
         document.getElementById('nightRemarks').value = data.night_remarks || '';
-        document.getElementById('versionDescription').value = data.version_description || '';
 
         const checklist = data.checklist_data || [];
         
@@ -514,11 +474,11 @@
     }
 
     function clearFormDataOnly() {
+        document.getElementById('currentRecordId').value = '';
         document.getElementById('dayShiftPerson').value = '';
         document.getElementById('nightShiftPerson').value = '';
         document.getElementById('dayRemarks').value = '';
         document.getElementById('nightRemarks').value = '';
-        document.getElementById('versionDescription').value = '';
         
         document.querySelectorAll('#checklistBody select').forEach(el => el.value = '');
         document.querySelectorAll('#checklistBody input').forEach(el => el.value = '');
@@ -561,8 +521,7 @@
             });
 
             const inspectionDate = document.getElementById('date').value;
-            const selectedVersionId = document.getElementById('versionSelect').value;
-            const versionDescription = document.getElementById('versionDescription').value;
+            const currentRecordId = document.getElementById('currentRecordId').value;
 
             let payload = {
                 inspection_date: inspectionDate,
@@ -570,31 +529,29 @@
                 night_shift_person: document.getElementById('nightShiftPerson').value,
                 day_remarks: document.getElementById('dayRemarks').value,
                 night_remarks: document.getElementById('nightRemarks').value,
-                checklist_data: checklistData,
-                version_description: versionDescription
+                checklist_data: checklistData
             };
 
             let result;
-            if (selectedVersionId === 'new') {
-                // Determine next version number
+            if (!currentRecordId) {
+                // Determine next version number (even if not shown in UI, good for DB consistency)
                 const lastVersion = currentDayRecords.length > 0 ? Math.max(...currentDayRecords.map(r => r.version)) : 0;
                 payload.version = lastVersion + 1;
                 result = await supabaseClient.from('inspections').insert([payload]).select();
             } else {
                 // Update existing version
-                result = await supabaseClient.from('inspections').update(payload).eq('id', selectedVersionId).select();
+                result = await supabaseClient.from('inspections').update(payload).eq('id', currentRecordId).select();
             }
 
             if (result.error) throw result.error;
 
             if(!silent) alert('¡Datos guardados exitosamente!');
             
-            // Reload to update version list
+            // Reload to update internal list and currentRecordId
             await loadDataByDate();
             
-            // If it was a new insert, select it
-            if (selectedVersionId === 'new' && result.data && result.data.length > 0) {
-                document.getElementById('versionSelect').value = result.data[0].id;
+            if (!currentRecordId && result.data && result.data.length > 0) {
+                document.getElementById('currentRecordId').value = result.data[0].id;
             }
 
             return true;
@@ -621,11 +578,6 @@
 
         // 2. Gather Data for PDF
         const date = document.getElementById('date').value;
-        const selectedId = document.getElementById('versionSelect').value;
-        const record = currentDayRecords.find(r => r.id == selectedId) || {};
-        const versionNum = record.version || 'Nueva';
-        const versionDesc = document.getElementById('versionDescription').value || '';
-        
         const dayPerson = document.getElementById('dayShiftPerson').value || '-';
         const nightPerson = document.getElementById('nightShiftPerson').value || '-';
         const dayRemarks = document.getElementById('dayRemarks').value || '-';
@@ -677,7 +629,6 @@
                 <div style="text-align: center; margin-bottom: 25px;">
                     <h2 style="margin: 0 0 8px 0; font-size: 20px;">排洪井安全、环境、排水生产检查表</h2>
                     <h3 style="margin: 0; font-size: 18px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
-                    <div style="margin-top: 5px; font-size: 14px; font-weight: bold;">Versión: ${versionNum} ${versionDesc ? '(' + versionDesc + ')' : ''}</div>
                 </div>
 
                 <!-- Meta Info -->
@@ -865,8 +816,6 @@
     // Helper to generate PDF blob for a specific record record
     async function generatePDFBlob(data) {
         const date = data.inspection_date;
-        const versionNum = data.version || '1';
-        const versionDesc = data.version_description || '';
         const dayPerson = data.day_shift_person || '-';
         const nightPerson = data.night_shift_person || '-';
         const dayRemarks = data.day_remarks || '-';
@@ -908,7 +857,6 @@
                 <div style="text-align: center; margin-bottom: 25px;">
                     <h2 style="margin: 0 0 8px 0; font-size: 20px;">排洪井安全、环境、排水生产检查表</h2>
                     <h3 style="margin: 0; font-size: 18px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
-                    <div style="margin-top: 5px; font-size: 14px; font-weight: bold;">Versión: ${versionNum} ${versionDesc ? '(' + versionDesc + ')' : ''}</div>
                 </div>
                 <div style="margin-bottom: 20px; border: 1px solid black; padding: 12px; background-color: #f8f9fa;">
                     <table style="width: 100%; font-size: 13px;">
@@ -1098,13 +1046,11 @@
         // 1. Set the date
         document.getElementById('date').value = record.inspection_date;
         
-        // 2. Load all versions for that date to populate the selector
+        // 2. Load the specific version for that date
         loadDataByDate().then(() => {
-            // 3. Select the specific version
-            document.getElementById('versionSelect').value = record.id;
             loadSpecificVersion(record.id);
             
-            // 4. Switch tab
+            // 3. Switch tab
             const tabEl = document.querySelector('#verificacion-tab');
             const tab = new bootstrap.Tab(tabEl);
             tab.show();
