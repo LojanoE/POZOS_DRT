@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.5.1'; // Fixed PDF filename error
+const APP_VERSION = '1.5.2'; // Changed status labels in PDF to SI/NO
 
 function initVersion() {
     document.querySelectorAll('.app-version-text').forEach(el => {
