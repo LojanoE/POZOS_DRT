@@ -6,24 +6,26 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <title>Lista de Verificación de Pozos de Inundación</title>
+    <title>Sistema de Inspección - Depósito de Relaves</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=1.5.2">
+    <link rel="stylesheet" href="style.css?v=1.8.0">
 </head>
 <body>
 
 <!-- Login Overlay -->
-<div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #343a40; z-index: 10000; display: flex; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 30px; border-radius: 10px; width: 300px; text-align: center; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
-        <h3 style="margin-bottom: 5px; color: #343a40;">Iniciar Sesión</h3>
+<div id="loginOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); z-index: 10000; display: flex; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 40px; border-radius: 16px; width: 350px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.4); border-top: 5px solid #D97706;">
+        <div style="font-size: 3em; margin-bottom: 15px;">⛏️</div>
+        <h3 style="margin-bottom: 8px; color: #1e293b; font-weight: 700; font-size: 1.5em;">Depósito de Relaves</h3>
+        <p style="color: #D97706; margin-bottom: 20px; font-weight: 600; font-size: 0.95em;">Sistema de Inspección y Monitoreo</p>
         <p class="text-muted mb-4" style="font-size: 0.8rem;">Versión del Sistema: <span class="app-version-text">...</span></p>
-        <input type="text" id="loginUser" class="form-control mb-3" placeholder="Usuario">
-        <input type="password" id="loginPass" class="form-control mb-3" placeholder="Contraseña">
-        <button onclick="performLogin()" class="btn btn-primary w-100">Entrar</button>
-        <div id="loginError" style="color: red; margin-top: 10px; font-size: 0.9em; display: none;">Credenciales incorrectas</div>
-        <button onclick="forceUpdate()" class="btn btn-link btn-sm mt-3 text-decoration-none" style="color: #6c757d;">Forzar Actualización</button>
+        <input type="text" id="loginUser" class="form-control mb-3" placeholder="Usuario" style="border: 1.5px solid #cbd5e1; padding: 10px;">
+        <input type="password" id="loginPass" class="form-control mb-3" placeholder="Contraseña" style="border: 1.5px solid #cbd5e1; padding: 10px;">
+        <button onclick="performLogin()" class="btn btn-primary w-100" style="background: linear-gradient(135deg, #D97706 0%, #B45309 100%); font-weight: 700; padding: 10px; margin-top: 10px;">🔓 Iniciar Sesión</button>
+        <div id="loginError" style="color: #dc2626; margin-top: 12px; font-size: 0.9em; display: none; font-weight: 600;">Credenciales incorrectas</div>
+        <button onclick="forceUpdate()" class="btn btn-link btn-sm mt-4 text-decoration-none" style="color: #9ca3af;">Forzar Actualización</button>
     </div>
 </div>
 
@@ -54,8 +56,8 @@
         <div class="tab-pane fade show active" id="verificacion" role="tabpanel" aria-labelledby="verificacion-tab">
             
             <h1>
-                <span class="zh-text">排洪井安全、环境、排水生产检查表</span>
-                <span class="es-text">Lista de verificación ambiental y de seguridad de pozos de inundación</span>
+                <span class="zh-text">📋 尾矿库安全、环保、排水作业检查表</span>
+                <span class="es-text">📋 Inspección de Seguridad y Control Ambiental - Depósito de Relaves</span>
             </h1>
 
             <form id="inspectionForm">
@@ -107,9 +109,9 @@
                 </div>
 
                 <!-- Technical Data Section (Not for PDF) -->
-                <div class="card mt-3 bg-light border-info">
-                    <div class="card-header bg-info text-white">
-                        <strong>Datos Técnicos de Bombeo y Niveles (No se incluyen en PDF)</strong>
+                <div class="card mt-3 bg-light" style="border: 2px solid #D97706;">
+                    <div class="card-header" style="background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%); color: #1e293b; font-weight: 700;">
+                        <strong>⚙️ Datos Técnicos de Bombeo y Monitoreo de Niveles</strong>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
@@ -171,8 +173,8 @@
         <!-- Tab: Reportes -->
         <div class="tab-pane fade" id="reportes" role="tabpanel" aria-labelledby="reportes-tab">
             <h1>
-                <span class="zh-text">导出报告 (ZIP)</span>
-                <span class="es-text">Exportar Reportes (ZIP)</span>
+                <span class="zh-text">📊 导出报告 (ZIP)</span>
+                <span class="es-text">📊 Exportar Reportes del Depósito (ZIP)</span>
             </h1>
 
             <div class="row form-section">
@@ -200,8 +202,8 @@
         <!-- Tab: Consulta -->
         <div class="tab-pane fade" id="consulta" role="tabpanel" aria-labelledby="consulta-tab">
             <h1>
-                <span class="zh-text">查询与批量打印</span>
-                <span class="es-text">Consulta y Impresión por Lote</span>
+                <span class="zh-text">🔍 查询与批量打印</span>
+                <span class="es-text">🔍 Consulta y Descarga de Reportes</span>
             </h1>
 
             <div class="row form-section">
@@ -250,8 +252,8 @@
         <!-- Tab: Información de Bombas -->
         <div class="tab-pane fade" id="bombas" role="tabpanel" aria-labelledby="bombas-tab">
             <h1>
-                <span class="zh-text">泵和水位信息</span>
-                <span class="es-text">Información de Bombas y Niveles</span>
+                <span class="zh-text">💧 泵及水位监测数据</span>
+                <span class="es-text">💧 Información Técnica - Bombas y Niveles de Agua</span>
             </h1>
 
             <div class="row form-section">
@@ -303,8 +305,8 @@
         <!-- Tab: Gráfica de Niveles -->
         <div class="tab-pane fade" id="grafica" role="tabpanel" aria-labelledby="grafica-tab">
             <h1>
-                <span class="zh-text">水位曲线图</span>
-                <span class="es-text">Gráfica de Niveles de Agua</span>
+                <span class="zh-text">📈 水位变化趋势图</span>
+                <span class="es-text">📈 Gráfica de Tendencias - Niveles de Agua</span>
             </h1>
 
             <div class="row form-section">
@@ -349,7 +351,7 @@
 <!-- FileSaver for downloading -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <!-- Custom Script -->
-<script src="script.js?v=1.5.2"></script>
+<script src="script.js?v=1.8.0"></script>
 
 </body>
 </html>
