@@ -43,6 +43,9 @@
         <li class="nav-item" role="presentation">
             <button class="nav-link" id="bombas-tab" data-bs-toggle="tab" data-bs-target="#bombas" type="button" role="tab" aria-controls="bombas" aria-selected="false">Información de Bombas</button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="grafica-tab" data-bs-toggle="tab" data-bs-target="#grafica" type="button" role="tab" aria-controls="grafica" aria-selected="false">Gráfica de Niveles</button>
+        </li>
     </ul>
 
     <!-- Tab Content -->
@@ -289,6 +292,32 @@
                 </table>
             </div>
         </div>
+
+        <!-- Tab: Gráfica de Niveles -->
+        <div class="tab-pane fade" id="grafica" role="tabpanel" aria-labelledby="grafica-tab">
+            <h1>
+                <span class="zh-text">水位曲线图</span>
+                <span class="es-text">Gráfica de Niveles de Agua</span>
+            </h1>
+
+            <div class="row form-section">
+                <div class="col-md-5 mb-3">
+                    <label for="chartStartDate" class="form-label">Desde (Fecha):</label>
+                    <input type="date" class="form-control" id="chartStartDate">
+                </div>
+                <div class="col-md-5 mb-3">
+                    <label for="chartEndDate" class="form-label">Hasta (Fecha):</label>
+                    <input type="date" class="form-control" id="chartEndDate">
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100" onclick="renderWaterLevelChart()">Generar Gráfica</button>
+                </div>
+            </div>
+
+            <div class="card p-3 shadow-sm mt-3" style="min-height: 400px; background: white;">
+                <canvas id="waterLevelChart"></canvas>
+            </div>
+        </div>
     </div>
 
     <div class="text-center pb-3">
@@ -308,6 +337,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- JSZip for ZIP creation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!-- Chart.js for Graphs -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <!-- FileSaver for downloading -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 <!-- Custom Script -->
