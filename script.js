@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.8.0'; // Added 'Gráfica de Niveles' tab with Chart.js
+const APP_VERSION = '1.8.1'; // Added 'Gráfica de Niveles' tab with Chart.js
 
 let levelChartInstance = null;
 
