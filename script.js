@@ -540,8 +540,8 @@ async function generatePDFBlob(data) {
     let tableRows = '';
     checklist.forEach(item => {
         const formatStatus = (val) => {
-            if (val === 'OK') return '√ (Normal)';
-            if (val === 'X') return 'X (Anormal)';
+            if (val === 'OK') return '√ (SI)';
+            if (val === 'X') return 'X (NO)';
             if (val === 'NA') return 'N/A';
             return '-';
         };
