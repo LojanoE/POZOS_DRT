@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.17'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.18'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -352,9 +352,15 @@ async function exportToPDF() {
 
     const container = document.createElement('div');
     container.id = 'pdf-export-temp';
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.visibility = 'hidden';
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.zIndex = '9999';
+    container.style.backgroundColor = '#fff';
+    container.style.padding = '20px';
+    container.style.boxSizing = 'border-box';
     container.innerHTML = htmlContent;
 
     document.body.appendChild(container);
@@ -365,11 +371,10 @@ async function exportToPDF() {
             margin: 10,
             filename: `Inspeccion_${date}.pdf`,
             html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        await html2pdf().set(opt).from(element).toPdf().save();
+        await html2pdf().set(opt).from(element).save();
     } catch (err) {
         console.error('PDF Error:', err);
         alert('Error: ' + err.message);
