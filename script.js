@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.12'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.13'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -323,119 +323,34 @@ async function exportToPDF() {
 
     const fmt = (v) => v === 'OK' ? '√ (SI)' : (v === 'X' ? 'X (NO)' : (v === 'NA' ? 'N/A' : '-'));
 
-    const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
-    if (!jsPDFClass) {
-        alert('Error: jsPDF no está disponible. Por favor recargue la página.');
-        return;
-    }
+    let tableRows = '';
+    checklistItems.forEach(item => {
+        const ds_el = document.querySelector(`[name="day_${item.id}"]`);
+        const dn_el = document.querySelector(`[name="day_note_${item.id}"]`);
+        const ns_el = document.querySelector(`[name="night_${item.id}"]`);
+        const nn_el = document.querySelector(`[name="night_note_${item.id}"]`);
 
-    const pdf = new jsPDFClass('p', 'mm', 'a4');
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 10;
-    const contentWidth = pageWidth - 2 * margin;
-    let yPosition = margin;
+        let ds = ds_el ? ds_el.value : '';
+        let dn = dn_el ? dn_el.value : '';
+        let ns = ns_el ? ns_el.value : '';
+        let nn = nn_el ? nn_el.value : '';
 
-    const addHeader = () => {
-        pdf.setFontSize(14);
-        pdf.text('排洪井安全、环境、排水生产检查表', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 7;
-        pdf.setFontSize(11);
-        pdf.text('Lista de verificación ambiental y de seguridad de pozos de inundación', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 8;
-    };
-
-    const addMetadata = () => {
-        pdf.setFontSize(10);
-        pdf.text(`Fecha: ${date} | Día: ${dayPerson} | Noche: ${nightPerson}`, margin, yPosition);
-        yPosition += 8;
-    };
-
-    const addTable = () => {
-        const headers = ['Artículos / 项目', 'Día / 白班', 'Noche / 夜班'];
-        const colWidths = [contentWidth * 0.55, contentWidth * 0.225, contentWidth * 0.225];
-
-        pdf.setFontSize(9);
-        pdf.setFillColor(220, 220, 220);
-
-        let xPos = margin;
-        headers.forEach((header, i) => {
-            pdf.rect(xPos, yPosition, colWidths[i], 6, 'F');
-            pdf.text(header, xPos + 2, yPosition + 4, { maxWidth: colWidths[i] - 4 });
-            xPos += colWidths[i];
-        });
-        yPosition += 8;
-
-        checklistItems.forEach((item, idx) => {
-            const ds_el = document.querySelector(`[name="day_${item.id}"]`);
-            const dn_el = document.querySelector(`[name="day_note_${item.id}"]`);
-            const ns_el = document.querySelector(`[name="night_${item.id}"]`);
-            const nn_el = document.querySelector(`[name="night_note_${item.id}"]`);
-
-            let ds = ds_el ? ds_el.value : '';
-            let dn = dn_el ? dn_el.value : '';
-            let ns = ns_el ? ns_el.value : '';
-            let nn = nn_el ? nn_el.value : '';
-
-            if (record.checklist_data) {
-                const memItem = record.checklist_data.find(c => c.id === item.id);
-                if (memItem) {
-                    if (!ds) ds = memItem.day_status;
-                    if (!dn) dn = memItem.day_note;
-                    if (!ns) ns = memItem.night_status;
-                    if (!nn) nn = memItem.night_note;
-                }
+        if (record.checklist_data) {
+            const memItem = record.checklist_data.find(c => c.id === item.id);
+            if (memItem) {
+                if (!ds) ds = memItem.day_status;
+                if (!dn) dn = memItem.day_note;
+                if (!ns) ns = memItem.night_status;
+                if (!nn) nn = memItem.night_note;
             }
-
-            const rowHeight = 12;
-            if (yPosition + rowHeight > pageHeight - margin) {
-                pdf.addPage();
-                yPosition = margin;
-                addHeader();
-            }
-
-            let xPos = margin;
-            const cellTexts = [
-                `${item.zh}\n${item.es}`,
-                `${fmt(ds)}${dn ? '\n' + dn : ''}`,
-                `${fmt(ns)}${nn ? '\n' + nn : ''}`
-            ];
-
-            cellTexts.forEach((text, i) => {
-                pdf.rect(xPos, yPosition, colWidths[i], rowHeight);
-                pdf.text(text, xPos + 2, yPosition + 2, { maxWidth: colWidths[i] - 4, fontSize: 8 });
-                xPos += colWidths[i];
-            });
-            yPosition += rowHeight;
-        });
-    };
-
-    const addRemarks = () => {
-        yPosition += 4;
-        if (yPosition + 15 > pageHeight - margin) {
-            pdf.addPage();
-            yPosition = margin;
         }
 
-        pdf.setFontSize(9);
-        pdf.text('Observaciones Día / 备注 (白班):', margin, yPosition);
-        yPosition += 5;
-        const dayRemarksLines = pdf.splitTextToSize(dayRemarks, contentWidth);
-        pdf.text(dayRemarksLines, margin, yPosition);
-        yPosition += dayRemarksLines.length * 4 + 3;
+        tableRows += `<tr><td style="border: 1px solid #333; padding: 8px;">${item.zh}<br><b>${item.es}</b></td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(ds)}</b>${dn ? '<div>' + dn + '</div>' : ''}</td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(ns)}</b>${nn ? '<div>' + nn + '</div>' : ''}</td></tr>`;
+    });
 
-        pdf.text('Observaciones Noche / 备注 (夜班):', margin, yPosition);
-        yPosition += 5;
-        const nightRemarksLines = pdf.splitTextToSize(nightRemarks, contentWidth);
-        pdf.text(nightRemarksLines, margin, yPosition);
-    };
+    const html = `<div style="padding: 20px; font-family: Arial, sans-serif;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${dayPerson}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${nightPerson}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${dayRemarks}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${nightRemarks}</div></div></div>`;
 
-    addHeader();
-    addMetadata();
-    addTable();
-    addRemarks();
-
-    pdf.save(`Inspeccion_${date}.pdf`);
+    html2pdf().set({ margin: 10, filename: `Inspeccion_${date}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', windowWidth: 1000, windowHeight: 1600, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(html).save().catch(e => { console.error(e); alert('Error: ' + e.message); });
 }
 
 async function exportRangeToZip() {
@@ -473,102 +388,16 @@ async function exportRangeToZip() {
 
 async function generatePDFBlob(record) {
     const fmt = (v) => v === 'OK' ? '√ (SI)' : (v === 'X' ? 'X (NO)' : (v === 'NA' ? 'N/A' : '-'));
-
-    const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
-    if (!jsPDFClass) {
-        throw new Error('jsPDF no está disponible');
-    }
-
-    const pdf = new jsPDFClass('p', 'mm', 'a4');
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const margin = 10;
-    const contentWidth = pageWidth - 2 * margin;
-    let yPosition = margin;
-
-    const addHeader = () => {
-        pdf.setFontSize(14);
-        pdf.text('排洪井安全、环境、排水生产检查表', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 7;
-        pdf.setFontSize(11);
-        pdf.text('Lista de verificación ambiental y de seguridad de pozos de inundación', pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 8;
-    };
-
-    const addMetadata = () => {
-        pdf.setFontSize(10);
-        pdf.text(`Fecha: ${record.inspection_date} | Día: ${record.day_shift_person || '-'} | Noche: ${record.night_shift_person || '-'}`, margin, yPosition);
-        yPosition += 8;
-    };
-
-    const addTable = () => {
-        const headers = ['Artículos / 项目', 'Día / 白班', 'Noche / 夜班'];
-        const colWidths = [contentWidth * 0.55, contentWidth * 0.225, contentWidth * 0.225];
-
-        pdf.setFontSize(9);
-        pdf.setFillColor(220, 220, 220);
-
-        let xPos = margin;
-        headers.forEach((header, i) => {
-            pdf.rect(xPos, yPosition, colWidths[i], 6, 'F');
-            pdf.text(header, xPos + 2, yPosition + 4, { maxWidth: colWidths[i] - 4 });
-            xPos += colWidths[i];
-        });
-        yPosition += 8;
-
-        (record.checklist_data || []).forEach((item) => {
-            const rowHeight = 12;
-            if (yPosition + rowHeight > pageHeight - margin) {
-                pdf.addPage();
-                yPosition = margin;
-                addHeader();
-            }
-
-            let xPos = margin;
-            const cellTexts = [
-                `${item.question_zh}\n${item.question_es}`,
-                `${fmt(item.day_status)}${item.day_note ? '\n' + item.day_note : ''}`,
-                `${fmt(item.night_status)}${item.night_note ? '\n' + item.night_note : ''}`
-            ];
-
-            cellTexts.forEach((text, i) => {
-                pdf.rect(xPos, yPosition, colWidths[i], rowHeight);
-                pdf.text(text, xPos + 2, yPosition + 2, { maxWidth: colWidths[i] - 4, fontSize: 8 });
-                xPos += colWidths[i];
-            });
-            yPosition += rowHeight;
-        });
-    };
-
-    const addRemarks = () => {
-        yPosition += 4;
-        if (yPosition + 15 > pageHeight - margin) {
-            pdf.addPage();
-            yPosition = margin;
-        }
-
-        pdf.setFontSize(9);
-        pdf.text('Observaciones Día / 备注 (白班):', margin, yPosition);
-        yPosition += 5;
-        const dayRemarksLines = pdf.splitTextToSize(record.day_remarks || '-', contentWidth);
-        pdf.text(dayRemarksLines, margin, yPosition);
-        yPosition += dayRemarksLines.length * 4 + 3;
-
-        pdf.text('Observaciones Noche / 备注 (夜班):', margin, yPosition);
-        yPosition += 5;
-        const nightRemarksLines = pdf.splitTextToSize(record.night_remarks || '-', contentWidth);
-        pdf.text(nightRemarksLines, margin, yPosition);
-    };
-
-    addHeader();
-    addMetadata();
-    addTable();
-    addRemarks();
-
-    return pdf.output('blob');
+    let tableRows = '';
+    (record.checklist_data || []).forEach(item => {
+        tableRows += `<tr><td style="border: 1px solid #333; padding: 8px;">${item.question_zh}<br><b>${item.question_es}</b></td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(item.day_status)}</b>${item.day_note ? '<div>' + item.day_note + '</div>' : ''}</td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(item.night_status)}</b>${item.night_note ? '<div>' + item.night_note + '</div>' : ''}</td></tr>`;
+    });
+    const html = `<div style="padding: 20px; font-family: Arial, sans-serif;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${record.inspection_date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${record.day_shift_person || '-'}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${record.night_shift_person || '-'}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${record.day_remarks || '-'}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${record.night_remarks || '-'}</div></div></div>`;
+    return new Promise((resolve, reject) => {
+        html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', windowWidth: 1000, windowHeight: 1600, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(html).output('blob').then(blob => resolve(blob)).catch(e => reject(e));
+    });
 }
 
-let queryResults = [];
 async function performQuery() {
     const start = document.getElementById('queryStartDate').value;
     const end = document.getElementById('queryEndDate').value;
