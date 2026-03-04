@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.9'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.10'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
