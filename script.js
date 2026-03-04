@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.4'; // Added 'Cantidad' field to pump records
+const APP_VERSION = '1.9.5'; // Fix blank PDF issue
 
 let levelChartInstance = null;
 
@@ -363,66 +363,59 @@ async function exportToPDF() {
             </tr>`;
     });
 
-    const fullHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-                .pdf-container { padding: 45px; background: white; width: 210mm; box-sizing: border-box; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid black; padding: 5px; }
-                .header { text-align: center; margin-bottom: 25px; }
-                .meta-table { margin-bottom: 20px; }
-                .checklist-table { font-size: 11px; margin-bottom: 20px; }
-                .remarks-section { font-size: 11px; }
-                .remark-box { margin-bottom: 10px; border: 1px solid black; padding: 5px; }
-            </style>
-        </head>
-        <body>
-            <div class="pdf-container">
-                <div class="header">
-                    <h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2>
-                    <h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
-                </div>
-                <div class="meta-table">
-                    <table>
-                        <tr>
-                            <td style="border: 1px solid black;"><strong>日期 Fecha:</strong> ${date}</td>
-                            <td style="border: 1px solid black;"><strong>白班当班人 dia:</strong> ${dayPerson}</td>
-                            <td style="border: 1px solid black;"><strong>夜班当班人 noche:</strong> ${nightPerson}</td>
-                        </tr>
-                    </table>
-                </div>
-                <table class="checklist-table">
-                    <thead style="background: #eee;">
-                        <tr>
-                            <th style="width: 60%;">项目 Artículos</th>
-                            <th style="width: 20%;">白班 Día</th>
-                            <th style="width: 20%;">夜班 Noche</th>
-                        </tr>
-                    </thead>
-                    <tbody>${tableRows}</tbody>
-                </table>
-                <div class="remarks-section">
-                    <div class="remark-box"><strong>备注 (白班) Obs. Día:</strong> ${dayRemarks}</div>
-                    <div class="remark-box"><strong>备注 (夜班) Obs. Noche:</strong> ${nightRemarks}</div>
-                </div>
+    const contentHtml = `
+        <div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;">
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2>
+                <h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
             </div>
-        </body>
-        </html>`;
+            <div style="margin-bottom: 20px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="border: 1px solid black; padding: 5px;"><strong>日期 Fecha:</strong> ${date}</td>
+                        <td style="border: 1px solid black; padding: 5px;"><strong>白班当班人 dia:</strong> ${dayPerson}</td>
+                        <td style="border: 1px solid black; padding: 5px;"><strong>夜班当班人 noche:</strong> ${nightPerson}</td>
+                    </tr>
+                </table>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
+                <thead style="background: #eee;">
+                    <tr>
+                        <th style="width: 60%; border: 1px solid black; padding: 5px;">项目 Artículos</th>
+                        <th style="width: 20%; border: 1px solid black; padding: 5px;">白班 Día</th>
+                        <th style="width: 20%; border: 1px solid black; padding: 5px;">夜班 Noche</th>
+                    </tr>
+                </thead>
+                <tbody>${tableRows}</tbody>
+            </table>
+            <div style="font-size: 11px;">
+                <div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${dayRemarks}</div>
+                <div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${nightRemarks}</div>
+            </div>
+        </div>`;
+
+    const element = document.createElement('div');
+    element.innerHTML = contentHtml;
+    element.style.position = 'absolute';
+    element.style.left = '0';
+    element.style.top = '0';
+    element.style.zIndex = '-9999';
+    document.body.appendChild(element);
 
     const opt = { 
         margin: 10, 
         filename: `Inspeccion_${date}.pdf`, 
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
     
-    html2pdf().set(opt).from(fullHtml).save().catch(err => {
+    html2pdf().set(opt).from(element).save().then(() => {
+        document.body.removeChild(element);
+    }).catch(err => {
         console.error("PDF Export Error:", err);
         alert("Error al generar el PDF.");
+        if(document.body.contains(element)) document.body.removeChild(element);
     });
 }
 
@@ -468,12 +461,14 @@ async function generatePDFBlob(data) {
     const html = `<div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>日期 Fecha:</strong> ${data.inspection_date}</td><td><strong>白班当班人 dia:</strong> ${data.day_shift_person || '-'}</td><td><strong>夜班当班人 noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
     
     const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-10000px';
+    container.style.position = 'absolute';
+    container.style.left = '0';
+    container.style.top = '0';
+    container.style.zIndex = '-9999';
     container.innerHTML = html;
     document.body.appendChild(container);
 
-    const worker = html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } });
+    const worker = html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } });
     const blob = await worker.from(container).output('blob');
     document.body.removeChild(container);
     return blob;
