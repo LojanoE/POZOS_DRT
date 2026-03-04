@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.1'; // Added 'Cantidad' field to pump records
+const APP_VERSION = '1.9.2'; // Added 'Cantidad' field to pump records
 
 let levelChartInstance = null;
 
