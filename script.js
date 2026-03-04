@@ -1,7 +1,8 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.19'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.10.0'; // Add user roles and configuration tab
 
 let levelChartInstance = null;
+let currentUserRole = null; // Store current user role
 
 function initVersion() {
     document.querySelectorAll('.app-version-text').forEach(el => {
@@ -43,8 +44,10 @@ async function performLogin() {
         if (error) throw error;
 
         if (data && data.password === pass) {
+            currentUserRole = data.role || 'user'; // Store user role
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainApp').style.display = 'block';
+            applyRolePermissions(currentUserRole); // Apply role-based permissions
             loadDataByDate();
         } else {
             errorMsg.innerText = "Usuario o contraseña incorrectos";
@@ -57,6 +60,43 @@ async function performLogin() {
     } finally {
         btn.disabled = false;
         btn.innerText = 'Entrar';
+    }
+}
+
+// Apply role-based tab visibility
+function applyRolePermissions(role) {
+    const verificacionTab = document.getElementById('verificacion-tab');
+    const configuracionTab = document.getElementById('configuracion-tab');
+
+    // Reset all tabs to visible first
+    if (verificacionTab) verificacionTab.style.display = 'none';
+    if (configuracionTab) configuracionTab.style.display = 'none';
+
+    if (role === 'admin') {
+        // Admin: All tabs including Configuración
+        if (verificacionTab) verificacionTab.style.display = 'block';
+        if (configuracionTab) configuracionTab.style.display = 'block';
+        // Load users when admin logs in
+        loadUsers();
+    } else if (role === 'user') {
+        // User: All tabs except Configuración
+        if (verificacionTab) verificacionTab.style.display = 'block';
+    } else if (role === 'viewer') {
+        // Viewer: Only Reportes, Consulta, Bombas, Grafica (NOT Verificación or Configuración)
+        // Verificación stays hidden, Configuración stays hidden
+    }
+
+    // Switch to first available tab based on role
+    let firstVisibleTab = null;
+    if (role === 'admin' || role === 'user') {
+        firstVisibleTab = document.getElementById('verificacion-tab');
+    } else {
+        firstVisibleTab = document.getElementById('reportes-tab');
+    }
+    
+    if (firstVisibleTab) {
+        const tab = new bootstrap.Tab(firstVisibleTab);
+        tab.show();
     }
 }
 
@@ -506,3 +546,142 @@ async function renderWaterLevelChart() {
         levelChartInstance = new Chart(ctx, { type: 'line', data: { labels: labels, datasets: [{ label: 'Nivel Día (m)', data: dayLevels, borderColor: '#0dcaf0', backgroundColor: 'rgba(13, 202, 240, 0.1)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }, { label: 'Nivel Noche (m)', data: nightLevels, borderColor: '#212529', backgroundColor: 'rgba(33, 37, 41, 0.05)', borderWidth: 2, tension: 0.3, fill: true, spanGaps: true }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: 'Elevación (m)' } }, x: { title: { display: true, text: 'Fecha' } } } } });
     } catch (err) { console.error(err); alert(err.message); }
 }
+
+// ==================== USER MANAGEMENT FUNCTIONS (CONFIGURACIÓN) ====================
+
+// Load all users into the table
+async function loadUsers() {
+    const tbody = document.getElementById('usersTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Cargando usuarios...</td></tr>';
+    
+    try {
+        const { data, error } = await supabaseClient.from('users').select('*').order('username', { ascending: true });
+        if (error) throw error;
+        
+        tbody.innerHTML = '';
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">No hay usuarios registrados</td></tr>';
+            return;
+        }
+        
+        data.forEach(user => {
+            const row = document.createElement('tr');
+            const roleBadge = getRoleBadge(user.role);
+            row.innerHTML = `
+                <td><strong>${user.username}</strong></td>
+                <td>${user.password}</td>
+                <td>${roleBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="editUser(${user.id}, '${user.username}', '${user.password}', '${user.role}')">✏️ Editar</button>
+                    ${user.username !== 'Admin' ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${user.id})">🗑️ Eliminar</button>` : ''}
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    } catch (err) {
+        console.error(err);
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error: ' + err.message + '</td></tr>';
+    }
+}
+
+function getRoleBadge(role) {
+    const badges = {
+        'admin': '<span class="badge bg-danger">Admin</span>',
+        'user': '<span class="badge bg-primary">User</span>',
+        'viewer': '<span class="badge bg-secondary">Viewer</span>'
+    };
+    return badges[role] || '<span class="badge bg-light text-dark">' + role + '</span>';
+}
+
+// Save new user or update existing
+async function saveUser() {
+    const userId = document.getElementById('editUserId').value;
+    const username = document.getElementById('newUsername').value.trim();
+    const password = document.getElementById('newUserPassword').value.trim();
+    const role = document.getElementById('newUserRole').value;
+    
+    if (!username || !password) {
+        alert('Por favor complete usuario y contraseña.');
+        return;
+    }
+    
+    try {
+        if (userId) {
+            // Update existing user
+            const { error } = await supabaseClient.from('users').update({
+                username: username,
+                password: password,
+                role: role
+            }).eq('id', userId);
+            
+            if (error) throw error;
+            alert('Usuario actualizado exitosamente.');
+        } else {
+            // Insert new user
+            const { error } = await supabaseClient.from('users').insert([{
+                username: username,
+                password: password,
+                role: role
+            }]);
+            
+            if (error) throw error;
+            alert('Usuario creado exitosamente.');
+        }
+        
+        clearUserForm();
+        loadUsers();
+    } catch (err) {
+        console.error(err);
+        alert('Error: ' + err.message);
+    }
+}
+
+// Edit user - populate form
+function editUser(id, username, password, role) {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('newUsername').value = username;
+    document.getElementById('newUserPassword').value = password;
+    document.getElementById('newUserRole').value = role;
+    document.getElementById('userFormTitle').innerText = '✏️ Editar Usuario';
+    document.getElementById('cancelUserBtn').style.display = 'inline-block';
+}
+
+// Delete user
+async function deleteUser(id) {
+    if (!confirm('¿Está seguro de eliminar este usuario?')) return;
+    
+    try {
+        const { error } = await supabaseClient.from('users').delete().eq('id', id);
+        if (error) throw error;
+        
+        alert('Usuario eliminado exitosamente.');
+        loadUsers();
+    } catch (err) {
+        console.error(err);
+        alert('Error: ' + err.message);
+    }
+}
+
+// Clear user form
+function clearUserForm() {
+    document.getElementById('editUserId').value = '';
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newUserPassword').value = '';
+    document.getElementById('newUserRole').value = 'viewer';
+    document.getElementById('userFormTitle').innerText = '➕ Nuevo Usuario';
+    document.getElementById('cancelUserBtn').style.display = 'none';
+}
+
+// Listen for Configuración tab to load users
+document.addEventListener('DOMContentLoaded', () => {
+    const configTab = document.getElementById('configuracion-tab');
+    if (configTab) {
+        configTab.addEventListener('shown.bs.tab', () => {
+            if (currentUserRole === 'admin') {
+                loadUsers();
+            }
+        });
+    }
+});
