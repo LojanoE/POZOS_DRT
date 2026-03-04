@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.18'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.19'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -348,38 +348,29 @@ async function exportToPDF() {
         tableRows += `<tr><td style="border: 1px solid #333; padding: 8px;">${item.zh}<br><b>${item.es}</b></td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(ds)}</b>${dn ? '<div>' + dn + '</div>' : ''}</td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(ns)}</b>${nn ? '<div>' + nn + '</div>' : ''}</td></tr>`;
     });
 
-    const htmlContent = `<div style="padding: 20px; font-family: Arial, sans-serif; width: 100%;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${dayPerson}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${nightPerson}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${dayRemarks}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${nightRemarks}</div></div></div>`;
+    const htmlContent = `<div style="padding: 20px; font-family: Arial, sans-serif;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${dayPerson}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${nightPerson}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${dayRemarks}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${nightRemarks}</div></div></div>`;
 
-    const container = document.createElement('div');
-    container.id = 'pdf-export-temp';
-    container.style.position = 'fixed';
-    container.style.top = '0';
-    container.style.left = '0';
-    container.style.width = '100%';
-    container.style.height = '100%';
-    container.style.zIndex = '9999';
-    container.style.backgroundColor = '#fff';
-    container.style.padding = '20px';
-    container.style.boxSizing = 'border-box';
+    const container = document.getElementById('hiddenCaptureContainer');
     container.innerHTML = htmlContent;
-
-    document.body.appendChild(container);
+    container.style.display = 'block';
 
     try {
-        const element = document.getElementById('pdf-export-temp');
         const opt = {
-            margin: 10,
+            margin: [10, 10, 10, 10],
             filename: `Inspeccion_${date}.pdf`,
-            html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
         };
 
-        await html2pdf().set(opt).from(element).save();
+        await html2pdf().set(opt).from(container).save().then(() => {
+            container.innerHTML = '';
+            container.style.display = 'none';
+        });
     } catch (err) {
         console.error('PDF Error:', err);
-        alert('Error: ' + err.message);
-    } finally {
-        document.body.removeChild(container);
+        alert('Error al generar PDF: ' + err.message);
+        container.innerHTML = '';
+        container.style.display = 'none';
     }
 }
 
