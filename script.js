@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.13'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.14'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -350,7 +350,17 @@ async function exportToPDF() {
 
     const html = `<div style="padding: 20px; font-family: Arial, sans-serif;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${dayPerson}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${nightPerson}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${dayRemarks}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${nightRemarks}</div></div></div>`;
 
-    html2pdf().set({ margin: 10, filename: `Inspeccion_${date}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', windowWidth: 1000, windowHeight: 1600, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(html).save().catch(e => { console.error(e); alert('Error: ' + e.message); });
+    const container = document.createElement('div');
+    container.id = 'pdf-content-temp';
+    container.style.display = 'none';
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    setTimeout(() => {
+        html2pdf().set({ margin: 10, filename: `Inspeccion_${date}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', windowWidth: 1200, windowHeight: 1800, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).save().then(() => {
+            document.body.removeChild(container);
+        }).catch(e => { console.error(e); alert('Error: ' + e.message); document.body.removeChild(container); });
+    }, 50);
 }
 
 async function exportRangeToZip() {
@@ -393,8 +403,23 @@ async function generatePDFBlob(record) {
         tableRows += `<tr><td style="border: 1px solid #333; padding: 8px;">${item.question_zh}<br><b>${item.question_es}</b></td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(item.day_status)}</b>${item.day_note ? '<div>' + item.day_note + '</div>' : ''}</td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(item.night_status)}</b>${item.night_note ? '<div>' + item.night_note + '</div>' : ''}</td></tr>`;
     });
     const html = `<div style="padding: 20px; font-family: Arial, sans-serif;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${record.inspection_date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${record.day_shift_person || '-'}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${record.night_shift_person || '-'}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${record.day_remarks || '-'}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${record.night_remarks || '-'}</div></div></div>`;
+
+    const container = document.createElement('div');
+    container.id = 'pdf-blob-temp';
+    container.style.display = 'none';
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
     return new Promise((resolve, reject) => {
-        html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', windowWidth: 1000, windowHeight: 1600, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(html).output('blob').then(blob => resolve(blob)).catch(e => reject(e));
+        setTimeout(() => {
+            html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', windowWidth: 1200, windowHeight: 1800, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(container).output('blob').then(blob => {
+                document.body.removeChild(container);
+                resolve(blob);
+            }).catch(e => {
+                document.body.removeChild(container);
+                reject(e);
+            });
+        }, 50);
     });
 }
 
