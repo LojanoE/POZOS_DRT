@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.6'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.7'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -197,7 +197,7 @@ async function loadDataByDate() {
 
 function loadPumpFields(data) {
     const fields = ['day_pump_open', 'day_pump_close', 'day_pump_quantity', 'day_water_level_before', 'day_water_level_after', 'day_mud_level',
-                  'night_pump_open', 'night_pump_close', 'night_pump_quantity', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'];
+        'night_pump_open', 'night_pump_close', 'night_pump_quantity', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'];
     fields.forEach(f => {
         const el = document.getElementById(f);
         if (el) el.value = (data && data[f]) ? data[f] : '';
@@ -238,7 +238,7 @@ function clearFormDataOnly() {
 }
 
 function clearForm() {
-    if(confirm('¿Borrar todo el formulario?')) {
+    if (confirm('¿Borrar todo el formulario?')) {
         const form = document.getElementById('inspectionForm');
         if (form) form.reset();
         document.getElementById('date').valueAsDate = new Date();
@@ -249,7 +249,7 @@ function clearForm() {
 async function saveToDatabase(silent = false) {
     const btn = document.querySelector('button[onclick="saveToDatabase()"]');
     const originalText = btn ? btn.innerText : '';
-    if(btn) { btn.innerText = "Guardando..."; btn.disabled = true; }
+    if (btn) { btn.innerText = "Guardando..."; btn.disabled = true; }
 
     try {
         const checklistData = checklistItems.map(item => ({
@@ -276,7 +276,7 @@ async function saveToDatabase(silent = false) {
 
         let result;
         // Check if there's an existing record for this date to update instead of inserting new version
-        const existingRecord = currentDayRecords[0]; 
+        const existingRecord = currentDayRecords[0];
         if (existingRecord) {
             result = await supabaseClient.from('inspections').update(payload).eq('id', existingRecord.id).select();
         } else {
@@ -287,18 +287,18 @@ async function saveToDatabase(silent = false) {
 
         const pumpPayload = { inspection_date: inspectionDate };
         ['day_pump_open', 'day_pump_close', 'day_pump_quantity', 'day_water_level_before', 'day_water_level_after', 'day_mud_level',
-         'night_pump_open', 'night_pump_close', 'night_pump_quantity', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'].forEach(f => {
-            const el = document.getElementById(f);
-            if (el) {
-                const val = el.value;
-                pumpPayload[f] = val === '' ? null : val;
-            }
-        });
+            'night_pump_open', 'night_pump_close', 'night_pump_quantity', 'night_water_level_before', 'night_water_level_after', 'night_mud_level'].forEach(f => {
+                const el = document.getElementById(f);
+                if (el) {
+                    const val = el.value;
+                    pumpPayload[f] = val === '' ? null : val;
+                }
+            });
 
         const { error: pumpError } = await supabaseClient.from('pump_records').upsert(pumpPayload, { onConflict: 'inspection_date' });
         if (pumpError) throw pumpError;
 
-        if(!silent) alert('¡Datos guardados exitosamente!');
+        if (!silent) alert('¡Datos guardados exitosamente!');
         await loadDataByDate();
         return true;
     } catch (error) {
@@ -306,12 +306,12 @@ async function saveToDatabase(silent = false) {
         alert('Error: ' + error.message);
         return false;
     } finally {
-        if(btn) { btn.innerText = originalText; btn.disabled = false; }
+        if (btn) { btn.innerText = originalText; btn.disabled = false; }
     }
 }
 
 async function exportToPDF() {
-    const saved = await saveToDatabase(true); 
+    const saved = await saveToDatabase(true);
     if (!saved && !confirm("No se pudo guardar. ¿Generar PDF de todos modos?")) return;
 
     // Use the latest record in memory or fall back to DOM
@@ -396,25 +396,26 @@ async function exportToPDF() {
 
     const element = document.createElement('div');
     element.innerHTML = contentHtml;
-    element.style.position = 'fixed';
-    element.style.left = '-10000px';
+    element.style.position = 'absolute';
+    element.style.left = '0';
     element.style.top = '0';
+    element.style.zIndex = '-9999';
     document.body.appendChild(element);
 
-    const opt = { 
-        margin: 10, 
-        filename: `Inspeccion_${date}.pdf`, 
+    const opt = {
+        margin: 10,
+        filename: `Inspeccion_${date}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1000 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    
+
     html2pdf().set(opt).from(element).save().then(() => {
         document.body.removeChild(element);
     }).catch(err => {
         console.error("PDF Export Error:", err);
         alert("Error al generar el PDF.");
-        if(document.body.contains(element)) document.body.removeChild(element);
+        if (document.body.contains(element)) document.body.removeChild(element);
     });
 }
 
@@ -439,7 +440,7 @@ async function exportRangeToZip() {
         for (let i = 0; i < data.length; i++) {
             const progress = Math.round(((i) / data.length) * 100);
             progressBar.style.width = `${progress}%`;
-            statusText.innerText = `Procesando: ${data[i].inspection_date} (${i+1}/${data.length})`;
+            statusText.innerText = `Procesando: ${data[i].inspection_date} (${i + 1}/${data.length})`;
             const pdfBlob = await generatePDFBlob(data[i]);
             zip.file(`Inspeccion_${data[i].inspection_date}.pdf`, pdfBlob);
         }
@@ -458,11 +459,12 @@ async function generatePDFBlob(data) {
     }).join('');
 
     const html = `<div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>日期 Fecha:</strong> ${data.inspection_date}</td><td><strong>白班当班人 dia:</strong> ${data.day_shift_person || '-'}</td><td><strong>夜班当班人 noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
-    
+
     const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '-10000px';
+    container.style.position = 'absolute';
+    container.style.left = '0';
     container.style.top = '0';
+    container.style.zIndex = '-9999';
     container.innerHTML = html;
     document.body.appendChild(container);
 
