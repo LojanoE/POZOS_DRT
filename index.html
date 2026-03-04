@@ -307,9 +307,11 @@
                         <label for="pumpEndDate" class="form-label">Hasta (Fecha):</label>
                         <input type="date" class="form-control" id="pumpEndDate">
                     </div>
-                    <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <div class="col-md-2 mb-3 d-flex align-items-end gap-2">
                         <button type="button" class="btn btn-primary w-100"
                             onclick="loadPumpRecordsReport()">Buscar</button>
+                        <button type="button" class="btn btn-success w-100"
+                            onclick="exportPumpToExcel()">📊 Excel</button>
                     </div>
                 </div>
 
@@ -471,8 +473,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <!-- jsPDF for PDF generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <!-- Custom Script -->
-    <script src="script.js?v=1.9.11"></script>
+    <script src="script.js?v=1.10.0"></script>
 
 </body>
 

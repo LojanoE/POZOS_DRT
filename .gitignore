@@ -1,0 +1,16 @@
+# Archivos de configuración de base de datos (no subir credenciales)
+update_users_role.sql
+*.sql
+
+# Archivos de entorno y credenciales
+.env
+.env.local
+*.pem
+*.key
+
+# Logs
+*.log
+
+# Archivos temporales
+*.tmp
+*.bak

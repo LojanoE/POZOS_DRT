@@ -526,7 +526,65 @@ async function loadPumpRecordsReport() {
             row.innerHTML = `<td class="text-center fw-bold">${r.inspection_date}</td><td>${r.day_pump_open || '-'}</td><td>${r.day_pump_close || '-'}</td><td>${r.day_pump_quantity || '-'}</td><td>${r.day_water_level_before || '-'}</td><td>${r.day_water_level_after || '-'}</td><td>${r.day_mud_level || '-'}</td><td class="bg-dark text-white">${r.night_pump_open || '-'}</td><td class="bg-dark text-white">${r.night_pump_close || '-'}</td><td class="bg-dark text-white">${r.night_pump_quantity || '-'}</td><td class="bg-dark text-white">${r.night_water_level_before || '-'}</td><td class="bg-dark text-white">${r.night_water_level_after || '-'}</td><td class="bg-dark text-white">${r.night_mud_level || '-'}</td>`;
             body.appendChild(row);
         });
+        // Store data for export
+        window.currentPumpData = data;
     } catch (err) { alert(err.message); }
+}
+
+// Export pump records to Excel
+function exportPumpToExcel() {
+    const start = document.getElementById('pumpStartDate').value;
+    const end = document.getElementById('pumpEndDate').value;
+    
+    if (!start || !end) return alert("Seleccione fechas primero.");
+    if (!window.currentPumpData || window.currentPumpData.length === 0) return alert("No hay datos para exportar. Realice una búsqueda primero.");
+
+    // Prepare data for Excel
+    const excelData = window.currentPumpData.map(r => ({
+        'Fecha': r.inspection_date,
+        'Día - Apertura': r.day_pump_open || '-',
+        'Día - Cierre': r.day_pump_close || '-',
+        'Día - Cantidad': r.day_pump_quantity || '-',
+        'Día - Nivel Agua (Antes)': r.day_water_level_before || '-',
+        'Día - Nivel Agua (Después)': r.day_water_level_after || '-',
+        'Día - Lodo': r.day_mud_level || '-',
+        'Noche - Apertura': r.night_pump_open || '-',
+        'Noche - Cierre': r.night_pump_close || '-',
+        'Noche - Cantidad': r.night_pump_quantity || '-',
+        'Noche - Nivel Agua (Antes)': r.night_water_level_before || '-',
+        'Noche - Nivel Agua (Después)': r.night_water_level_after || '-',
+        'Noche - Lodo': r.night_mud_level || '-'
+    }));
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths
+    ws['!cols'] = [
+        { wch: 12 }, // Fecha
+        { wch: 12 }, // Día - Apertura
+        { wch: 12 }, // Día - Cierre
+        { wch: 10 }, // Día - Cantidad
+        { wch: 18 }, // Día - Nivel Agua (Antes)
+        { wch: 18 }, // Día - Nivel Agua (Después)
+        { wch: 10 }, // Día - Lodo
+        { wch: 12 }, // Noche - Apertura
+        { wch: 12 }, // Noche - Cierre
+        { wch: 10 }, // Noche - Cantidad
+        { wch: 18 }, // Noche - Nivel Agua (Antes)
+        { wch: 18 }, // Noche - Nivel Agua (Después)
+        { wch: 10 }  // Noche - Lodo
+    ];
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(wb, ws, "Registro de Bombas");
+
+    // Generate filename with date range
+    const filename = `Reporte_Bombas_${start}_al_${end}.xlsx`;
+
+    // Download file
+    XLSX.writeFile(wb, filename);
 }
 
 async function renderWaterLevelChart() {
