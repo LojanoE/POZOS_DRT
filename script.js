@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.15'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.16'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -348,13 +348,26 @@ async function exportToPDF() {
         tableRows += `<tr><td style="border: 1px solid #333; padding: 8px;">${item.zh}<br><b>${item.es}</b></td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(ds)}</b>${dn ? '<div>' + dn + '</div>' : ''}</td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(ns)}</b>${nn ? '<div>' + nn + '</div>' : ''}</td></tr>`;
     });
 
-    const htmlContent = `<div style="padding: 20px; font-family: Arial, sans-serif;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${dayPerson}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${nightPerson}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${dayRemarks}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${nightRemarks}</div></div></div>`;
+    const htmlContent = `<div style="padding: 20px; font-family: Arial, sans-serif; width: 100%;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${dayPerson}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${nightPerson}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${dayRemarks}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${nightRemarks}</div></div></div>`;
+
+    const container = document.createElement('div');
+    container.id = 'pdf-export-temp';
+    container.innerHTML = htmlContent;
+    
+    document.body.appendChild(container);
 
     try {
-        await html2pdf().set({ margin: 10, filename: `Inspeccion_${date}.pdf`, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).fromHTML(htmlContent, { margin: 10 }).save();
+        await html2pdf().set({
+            margin: 10,
+            filename: `Inspeccion_${date}.pdf`,
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(container).save();
     } catch (err) {
-        console.error(err);
-        alert('Error al generar PDF: ' + err.message);
+        console.error('PDF Error:', err);
+        alert('Error: ' + err.message);
+    } finally {
+        document.body.removeChild(container);
     }
 }
 
@@ -397,9 +410,25 @@ async function generatePDFBlob(record) {
     (record.checklist_data || []).forEach(item => {
         tableRows += `<tr><td style="border: 1px solid #333; padding: 8px;">${item.question_zh}<br><b>${item.question_es}</b></td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(item.day_status)}</b>${item.day_note ? '<div>' + item.day_note + '</div>' : ''}</td><td style="border: 1px solid #333; padding: 8px; text-align: center;"><b>${fmt(item.night_status)}</b>${item.night_note ? '<div>' + item.night_note + '</div>' : ''}</td></tr>`;
     });
-    const htmlContent = `<div style="padding: 20px; font-family: Arial, sans-serif;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${record.inspection_date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${record.day_shift_person || '-'}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${record.night_shift_person || '-'}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${record.day_remarks || '-'}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${record.night_remarks || '-'}</div></div></div>`;
+    const htmlContent = `<div style="padding: 20px; font-family: Arial, sans-serif; width: 100%;"><div style="text-align: center; margin-bottom: 20px;"><h2 style="margin: 0;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 5px 0 0 0;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><tr><td style="border: 1px solid #333; padding: 8px;"><b>Fecha:</b> ${record.inspection_date}</td><td style="border: 1px solid #333; padding: 8px;"><b>Día:</b> ${record.day_shift_person || '-'}</td><td style="border: 1px solid #333; padding: 8px;"><b>Noche:</b> ${record.night_shift_person || '-'}</td></tr></table><table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;"><thead><tr style="background: #ddd;"><th style="border: 1px solid #333; padding: 8px; text-align: left;">项目 Artículos</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">白班 Día</th><th style="border: 1px solid #333; padding: 8px; text-align: center;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid #333; padding: 8px;"><b>备注 (白班) Obs. Día:</b> ${record.day_remarks || '-'}</div><div style="border: 1px solid #333; padding: 8px;"><b>备注 (夜班) Obs. Noche:</b> ${record.night_remarks || '-'}</div></div></div>`;
 
-    return await html2pdf().set({ margin: 0, html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).fromHTML(htmlContent, { margin: 0 }).output('blob');
+    const container = document.createElement('div');
+    container.id = 'pdf-blob-temp';
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+
+    try {
+        const blob = await html2pdf().set({
+            margin: 0,
+            html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }).from(container).output('blob');
+        document.body.removeChild(container);
+        return blob;
+    } catch (err) {
+        document.body.removeChild(container);
+        throw err;
+    }
 }
 
 async function performQuery() {
