@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.2'; // Added 'Cantidad' field to pump records
+const APP_VERSION = '1.9.3'; // Added 'Cantidad' field to pump records
 
 let levelChartInstance = null;
 
@@ -275,12 +275,13 @@ async function saveToDatabase(silent = false) {
         };
 
         let result;
-        if (!currentRecordId) {
-            const lastVersion = currentDayRecords.length > 0 ? Math.max(...currentDayRecords.map(r => r.version)) : 0;
-            payload.version = lastVersion + 1;
-            result = await supabaseClient.from('inspections').insert([payload]).select();
+        // Check if there's an existing record for this date to update instead of inserting new version
+        const existingRecord = currentDayRecords[0]; 
+        if (existingRecord) {
+            result = await supabaseClient.from('inspections').update(payload).eq('id', existingRecord.id).select();
         } else {
-            result = await supabaseClient.from('inspections').update(payload).eq('id', currentRecordId).select();
+            payload.version = 1;
+            result = await supabaseClient.from('inspections').insert([payload]).select();
         }
         if (result.error) throw result.error;
 
@@ -352,18 +353,18 @@ async function exportToPDF() {
             </div>
             <div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;">
                 <table style="width: 100%; font-size: 12px;">
-                    <tr><td><strong>Fecha:</strong> ${date}</td><td><strong>Día:</strong> ${dayPerson}</td><td><strong>Noche:</strong> ${nightPerson}</td></tr>
+                    <tr><td><strong>日期 Fecha:</strong> ${date}</td><td><strong>白班当班人 dia:</strong> ${dayPerson}</td><td><strong>夜班当班人 noche:</strong> ${nightPerson}</td></tr>
                 </table>
             </div>
             <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
                 <thead style="background: #eee;">
-                    <tr><th style="border: 1px solid black; padding: 8px;">Artículos</th><th style="border: 1px solid black;">Día</th><th style="border: 1px solid black;">Noche</th></tr>
+                    <tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr>
                 </thead>
                 <tbody>${tableRows}</tbody>
             </table>
             <div style="font-size: 11px;">
-                <div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>Obs. Día:</strong> ${dayRemarks}</div>
-                <div style="border: 1px solid black; padding: 5px;"><strong>Obs. Noche:</strong> ${nightRemarks}</div>
+                <div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${dayRemarks}</div>
+                <div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${nightRemarks}</div>
             </div>
         </div>`;
 
@@ -395,7 +396,7 @@ async function exportRangeToZip() {
             progressBar.style.width = `${progress}%`;
             statusText.innerText = `Procesando: ${data[i].inspection_date} (${i+1}/${data.length})`;
             const pdfBlob = await generatePDFBlob(data[i]);
-            zip.file(`Inspeccion_${data[i].inspection_date}_v${data[i].version}.pdf`, pdfBlob);
+            zip.file(`Inspeccion_${data[i].inspection_date}.pdf`, pdfBlob);
         }
         statusText.innerText = "Empaquetando ZIP...";
         const content = await zip.generateAsync({ type: "blob" });
@@ -411,7 +412,7 @@ async function generatePDFBlob(data) {
         return `<tr><td style="border: 1px solid black; padding: 5px;"><div style="font-size: 10px;">${item.question_zh}</div><div style="font-weight: bold; font-size: 11px;">${item.question_es}</div></td><td style="border: 1px solid black; padding: 5px; text-align: center;"><div style="font-weight: bold;">${fmt(item.day_status)}</div>${item.day_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.day_note}</div>` : ''}</td><td style="border: 1px solid black; padding: 5px; text-align: center;"><div style="font-weight: bold;">${fmt(item.night_status)}</div>${item.night_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.night_note}</div>` : ''}</td></tr>`;
     }).join('');
 
-    const html = `<div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>Fecha:</strong> ${data.inspection_date}</td><td><strong>Día:</strong> ${data.day_shift_person || '-'}</td><td><strong>Noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">Artículos</th><th style="border: 1px solid black;">Día</th><th style="border: 1px solid black;">Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
+    const html = `<div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>日期 Fecha:</strong> ${data.inspection_date}</td><td><strong>白班当班人 dia:</strong> ${data.day_shift_person || '-'}</td><td><strong>夜班当班人 noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
     const worker = html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } });
     return await worker.from(html).output('blob');
 }
@@ -429,7 +430,7 @@ async function performQuery() {
         body.innerHTML = '';
         queryResults.forEach(r => {
             const row = document.createElement('tr');
-            row.innerHTML = `<td><input type="checkbox" class="record-checkbox" value="${r.id}"></td><td>${r.inspection_date}</td><td>v${r.version}</td><td>${r.day_shift_person || '-'}</td><td>${r.night_shift_person || '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="loadAndSwitchToVerificacion('${r.id}')">Ver</button></td>`;
+            row.innerHTML = `<td><input type="checkbox" class="record-checkbox" value="${r.id}"></td><td>${r.inspection_date}</td><td>${r.day_shift_person || '-'}</td><td>${r.night_shift_person || '-'}</td><td><button class="btn btn-sm btn-outline-primary" onclick="loadAndSwitchToVerificacion('${r.id}')">Ver</button></td>`;
             body.appendChild(row);
         });
     } catch (err) { alert(err.message); }

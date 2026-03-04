@@ -71,11 +71,11 @@
                         <input type="date" class="form-control" id="date" required>
                     </div>
                     <div class="col-md-4 mb-1">
-                        <label for="dayShiftPerson" class="form-label">白班 Dia:</label>
+                        <label for="dayShiftPerson" class="form-label">白班当班人 dia:</label>
                         <input type="text" class="form-control" id="dayShiftPerson">
                     </div>
                     <div class="col-md-4 mb-1">
-                        <label for="nightShiftPerson" class="form-label">夜班 Noche:</label>
+                        <label for="nightShiftPerson" class="form-label">夜班当班人 noche:</label>
                         <input type="text" class="form-control" id="nightShiftPerson">
                     </div>
                 </div>
@@ -99,11 +99,11 @@
                 <!-- Remarks Section -->
                 <div class="row mt-2">
                     <div class="col-md-6 mb-1">
-                        <label for="dayRemarks" class="form-label">白班备注 Observación (Dia):</label>
+                        <label for="dayRemarks" class="form-label">备注 (白班) Obs. Día:</label>
                         <textarea class="form-control" id="dayRemarks" rows="3"></textarea>
                     </div>
                     <div class="col-md-6 mb-1">
-                        <label for="nightRemarks" class="form-label">夜班备注 Observación (Noche):</label>
+                        <label for="nightRemarks" class="form-label">备注 (夜班) Obs. Noche:</label>
                         <textarea class="form-control" id="nightRemarks" rows="3"></textarea>
                     </div>
                 </div>
@@ -226,10 +226,9 @@
                     <thead class="table-dark">
                         <tr>
                             <th style="width: 5%"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
-                            <th style="width: 15%">Fecha</th>
-                            <th style="width: 10%">Versión</th>
+                            <th style="width: 20%">Fecha</th>
                             <th style="width: 25%">Personal Día</th>
-                            <th style="width: 25%">Personal Noche</th>
+                            <th style="width: 30%">Personal Noche</th>
                             <th style="width: 20%">Acciones</th>
                         </tr>
                     </thead>
