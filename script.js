@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.13.2'; // Auto-load pump data (15 days)
+const APP_VERSION = '1.13.3'; // Auto-load pump data (15 days)
 
 let levelChartInstance = null;
 let currentUserRole = null; // Store current user role

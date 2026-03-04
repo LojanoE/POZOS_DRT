@@ -46,7 +46,8 @@ def setup_users():
         cur.execute("ALTER TABLE users ENABLE ROW LEVEL SECURITY;")
         cur.execute("""
             DROP POLICY IF EXISTS "Public Read Users" ON users;
-            CREATE POLICY "Public Read Users" ON users FOR SELECT USING (true);
+            DROP POLICY IF EXISTS "Public Access Users" ON users;
+            CREATE POLICY "Public Access Users" ON users FOR ALL USING (true) WITH CHECK (true);
         """)
 
         conn.commit()
