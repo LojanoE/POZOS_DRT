@@ -314,18 +314,36 @@ async function exportToPDF() {
     const saved = await saveToDatabase(true); 
     if (!saved && !confirm("No se pudo guardar. ¿Generar PDF de todos modos?")) return;
 
+    // Use the latest record in memory or fall back to DOM
+    const record = currentDayRecords[0] || {};
     const date = document.getElementById('date').value;
-    const dayPerson = document.getElementById('dayShiftPerson').value || '-';
-    const nightPerson = document.getElementById('nightShiftPerson').value || '-';
-    const dayRemarks = document.getElementById('dayRemarks').value || '-';
-    const nightRemarks = document.getElementById('nightRemarks').value || '-';
+    const dayPerson = document.getElementById('dayShiftPerson').value || record.day_shift_person || '-';
+    const nightPerson = document.getElementById('nightShiftPerson').value || record.night_shift_person || '-';
+    const dayRemarks = document.getElementById('dayRemarks').value || record.day_remarks || '-';
+    const nightRemarks = document.getElementById('nightRemarks').value || record.night_remarks || '-';
 
     let tableRows = '';
     checklistItems.forEach(item => {
-        const ds = document.querySelector(`[name="day_${item.id}"]`).value;
-        const dn = document.querySelector(`[name="day_note_${item.id}"]`).value;
-        const ns = document.querySelector(`[name="night_${item.id}"]`).value;
-        const nn = document.querySelector(`[name="night_note_${item.id}"]`).value;
+        const ds_el = document.querySelector(`[name="day_${item.id}"]`);
+        const dn_el = document.querySelector(`[name="day_note_${item.id}"]`);
+        const ns_el = document.querySelector(`[name="night_${item.id}"]`);
+        const nn_el = document.querySelector(`[name="night_note_${item.id}"]`);
+
+        // Get status from memory if DOM is empty (rare but possible after save/reload)
+        let ds = ds_el ? ds_el.value : '';
+        let dn = dn_el ? dn_el.value : '';
+        let ns = ns_el ? ns_el.value : '';
+        let nn = nn_el ? nn_el.value : '';
+
+        if (record.checklist_data) {
+            const memItem = record.checklist_data.find(c => c.id === item.id);
+            if (memItem) {
+                if (!ds) ds = memItem.day_status;
+                if (!dn) dn = memItem.day_note;
+                if (!ns) ns = memItem.night_status;
+                if (!nn) nn = memItem.night_note;
+            }
+        }
 
         const fmt = (v) => v === 'OK' ? '√ (SI)' : (v === 'X' ? 'X (NO)' : (v === 'NA' ? 'N/A' : '-'));
         tableRows += `
@@ -345,45 +363,67 @@ async function exportToPDF() {
             </tr>`;
     });
 
-    const html = `
-        <div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;">
-            <div style="text-align: center; margin-bottom: 25px;">
-                <h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2>
-                <h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
-            </div>
-            <div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;">
-                <table style="width: 100%; font-size: 12px;">
-                    <tr><td><strong>日期 Fecha:</strong> ${date}</td><td><strong>白班当班人 dia:</strong> ${dayPerson}</td><td><strong>夜班当班人 noche:</strong> ${nightPerson}</td></tr>
+    const fullHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+                .pdf-container { padding: 45px; background: white; width: 210mm; box-sizing: border-box; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid black; padding: 5px; }
+                .header { text-align: center; margin-bottom: 25px; }
+                .meta-table { margin-bottom: 20px; }
+                .checklist-table { font-size: 11px; margin-bottom: 20px; }
+                .remarks-section { font-size: 11px; }
+                .remark-box { margin-bottom: 10px; border: 1px solid black; padding: 5px; }
+            </style>
+        </head>
+        <body>
+            <div class="pdf-container">
+                <div class="header">
+                    <h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2>
+                    <h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
+                </div>
+                <div class="meta-table">
+                    <table>
+                        <tr>
+                            <td style="border: 1px solid black;"><strong>日期 Fecha:</strong> ${date}</td>
+                            <td style="border: 1px solid black;"><strong>白班当班人 dia:</strong> ${dayPerson}</td>
+                            <td style="border: 1px solid black;"><strong>夜班当班人 noche:</strong> ${nightPerson}</td>
+                        </tr>
+                    </table>
+                </div>
+                <table class="checklist-table">
+                    <thead style="background: #eee;">
+                        <tr>
+                            <th style="width: 60%;">项目 Artículos</th>
+                            <th style="width: 20%;">白班 Día</th>
+                            <th style="width: 20%;">夜班 Noche</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
                 </table>
+                <div class="remarks-section">
+                    <div class="remark-box"><strong>备注 (白班) Obs. Día:</strong> ${dayRemarks}</div>
+                    <div class="remark-box"><strong>备注 (夜班) Obs. Noche:</strong> ${nightRemarks}</div>
+                </div>
             </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;">
-                <thead style="background: #eee;">
-                    <tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr>
-                </thead>
-                <tbody>${tableRows}</tbody>
-            </table>
-            <div style="font-size: 11px;">
-                <div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${dayRemarks}</div>
-                <div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${nightRemarks}</div>
-            </div>
-        </div>`;
+        </body>
+        </html>`;
 
-    const container = document.getElementById('hiddenCaptureContainer') || document.createElement('div');
-    if (!container.id) {
-        container.id = 'hiddenCaptureContainer';
-        document.body.appendChild(container);
-    }
-    container.innerHTML = html;
-
-    const opt = { margin: 0, filename: `Inspeccion_${date}.pdf`, image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+    const opt = { 
+        margin: 10, 
+        filename: `Inspeccion_${date}.pdf`, 
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
     
-    // Use a small timeout to ensure DOM is ready
-    setTimeout(() => {
-        html2pdf().set(opt).from(container).save().then(() => {
-            container.innerHTML = '';
-        });
-    }, 100);
+    html2pdf().set(opt).from(fullHtml).save().catch(err => {
+        console.error("PDF Export Error:", err);
+        alert("Error al generar el PDF.");
+    });
 }
 
 async function exportRangeToZip() {

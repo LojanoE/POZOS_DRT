@@ -84,10 +84,14 @@ tr.bg-dark.text-white {
     font-size: 1.05em;
 }
 #hiddenCaptureContainer {
-    position: absolute;
-    left: -9999px;
+    position: fixed;
     top: 0;
+    left: 0;
     width: 210mm;
+    z-index: -9999;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Tab Styling */
