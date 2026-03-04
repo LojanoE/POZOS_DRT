@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.16'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.17'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -352,17 +352,24 @@ async function exportToPDF() {
 
     const container = document.createElement('div');
     container.id = 'pdf-export-temp';
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.visibility = 'hidden';
     container.innerHTML = htmlContent;
-    
+
     document.body.appendChild(container);
 
     try {
-        await html2pdf().set({
+        const element = document.getElementById('pdf-export-temp');
+        const opt = {
             margin: 10,
             filename: `Inspeccion_${date}.pdf`,
             html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#fff', logging: false },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        }).from(container).save();
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        };
+
+        await html2pdf().set(opt).from(element).toPdf().save();
     } catch (err) {
         console.error('PDF Error:', err);
         alert('Error: ' + err.message);
