@@ -368,9 +368,22 @@ async function exportToPDF() {
             </div>
         </div>`;
 
+    const container = document.getElementById('hiddenCaptureContainer') || document.createElement('div');
+    if (!container.id) {
+        container.id = 'hiddenCaptureContainer';
+        document.body.appendChild(container);
+    }
+    container.innerHTML = html;
+
     const opt = { margin: 0, filename: `Inspeccion_${date}.pdf`, image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
-    html2pdf().set(opt).from(html).save();
+                html2canvas: { scale: 2, useCORS: true, logging: false }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } };
+    
+    // Use a small timeout to ensure DOM is ready
+    setTimeout(() => {
+        html2pdf().set(opt).from(container).save().then(() => {
+            container.innerHTML = '';
+        });
+    }, 100);
 }
 
 async function exportRangeToZip() {
@@ -413,8 +426,17 @@ async function generatePDFBlob(data) {
     }).join('');
 
     const html = `<div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>日期 Fecha:</strong> ${data.inspection_date}</td><td><strong>白班当班人 dia:</strong> ${data.day_shift_person || '-'}</td><td><strong>夜班当班人 noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
+    
+    const container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.left = '-10000px';
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
     const worker = html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } });
-    return await worker.from(html).output('blob');
+    const blob = await worker.from(container).output('blob');
+    document.body.removeChild(container);
+    return blob;
 }
 
 let queryResults = [];
