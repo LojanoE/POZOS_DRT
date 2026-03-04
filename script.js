@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.13.1'; // Add user roles and configuration tab
+const APP_VERSION = '1.13.2'; // Auto-load pump data (15 days)
 
 let levelChartInstance = null;
 let currentUserRole = null; // Store current user role
@@ -200,6 +200,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 endInput.valueAsDate = today;
             }
             renderWaterLevelChart();
+        });
+    }
+
+    const bombasTabEl = document.getElementById('bombas-tab');
+    if (bombasTabEl) {
+        bombasTabEl.addEventListener('shown.bs.tab', () => {
+            const startInput = document.getElementById('pumpStartDate');
+            const endInput = document.getElementById('pumpEndDate');
+            if (startInput && endInput && (!startInput.value || !endInput.value)) {
+                const today = new Date();
+                const twoWeeksAgo = new Date();
+                twoWeeksAgo.setDate(today.getDate() - 14);
+                startInput.valueAsDate = twoWeeksAgo;
+                endInput.valueAsDate = today;
+            }
+            loadPumpRecordsReport();
         });
     }
 });
@@ -743,4 +759,3 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
