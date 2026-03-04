@@ -1,5 +1,5 @@
 // --- APPLICATION VERSIONING ---
-const APP_VERSION = '1.9.8'; // Fix blank PDF z-index issue
+const APP_VERSION = '1.9.9'; // Fix blank PDF z-index issue
 
 let levelChartInstance = null;
 
@@ -364,7 +364,7 @@ async function exportToPDF() {
     });
 
     const contentHtml = `
-        <div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;">
+        <div style="font-family: Arial, sans-serif; padding: 20px; background: white; width: 800px; box-sizing: border-box;">
             <div style="text-align: center; margin-bottom: 25px;">
                 <h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2>
                 <h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3>
@@ -398,7 +398,7 @@ async function exportToPDF() {
         margin: 10,
         filename: `Inspeccion_${date}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1000 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 800 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
@@ -447,9 +447,9 @@ async function generatePDFBlob(data) {
         return `<tr><td style="border: 1px solid black; padding: 5px;"><div style="font-size: 10px;">${item.question_zh}</div><div style="font-weight: bold; font-size: 11px;">${item.question_es}</div></td><td style="border: 1px solid black; padding: 5px; text-align: center;"><div style="font-weight: bold;">${fmt(item.day_status)}</div>${item.day_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.day_note}</div>` : ''}</td><td style="border: 1px solid black; padding: 5px; text-align: center;"><div style="font-weight: bold;">${fmt(item.night_status)}</div>${item.night_note ? `<div style="font-size: 9px; margin-top: 2px;">${item.night_note}</div>` : ''}</td></tr>`;
     }).join('');
 
-    const html = `<div style="font-family: Arial, sans-serif; padding: 45px; background: white; width: 210mm; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>日期 Fecha:</strong> ${data.inspection_date}</td><td><strong>白班当班人 dia:</strong> ${data.day_shift_person || '-'}</td><td><strong>夜班当班人 noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
+    const html = `<div style="font-family: Arial, sans-serif; padding: 20px; background: white; width: 800px; box-sizing: border-box;"><div style="text-align: center; margin-bottom: 25px;"><h2 style="margin: 0; font-size: 18px;">排洪井安全、环境、排水生产检查表</h2><h3 style="margin: 0; font-size: 16px;">Lista de verificación ambiental y de seguridad de pozos de inundación</h3></div><div style="margin-bottom: 20px; border: 1px solid black; padding: 10px;"><table style="width: 100%; font-size: 12px;"><tr><td><strong>日期 Fecha:</strong> ${data.inspection_date}</td><td><strong>白班当班人 dia:</strong> ${data.day_shift_person || '-'}</td><td><strong>夜班当班人 noche:</strong> ${data.night_shift_person || '-'}</td></tr></table></div><table style="width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 20px;"><thead style="background: #eee;"><tr><th style="border: 1px solid black; padding: 8px;">项目 Artículos</th><th style="border: 1px solid black;">白班 Día</th><th style="border: 1px solid black;">夜班 Noche</th></tr></thead><tbody>${tableRows}</tbody></table><div style="font-size: 11px;"><div style="margin-bottom: 10px; border: 1px solid black; padding: 5px;"><strong>备注 (白班) Obs. Día:</strong> ${data.day_remarks || '-'}</div><div style="border: 1px solid black; padding: 5px;"><strong>备注 (夜班) Obs. Noche:</strong> ${data.night_remarks || '-'}</div></div></div>`;
 
-    const worker = html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 1000 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } });
+    const worker = html2pdf().set({ margin: 0, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 800 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } });
     const blob = await worker.from(html).output('blob');
     return blob;
 }
