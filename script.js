@@ -323,7 +323,13 @@ async function exportToPDF() {
 
     const fmt = (v) => v === 'OK' ? '√ (SI)' : (v === 'X' ? 'X (NO)' : (v === 'NA' ? 'N/A' : '-'));
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+    if (!jsPDFClass) {
+        alert('Error: jsPDF no está disponible. Por favor recargue la página.');
+        return;
+    }
+
+    const pdf = new jsPDFClass('p', 'mm', 'a4');
     const pageHeight = pdf.internal.pageSize.getHeight();
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 10;
@@ -468,7 +474,12 @@ async function exportRangeToZip() {
 async function generatePDFBlob(record) {
     const fmt = (v) => v === 'OK' ? '√ (SI)' : (v === 'X' ? 'X (NO)' : (v === 'NA' ? 'N/A' : '-'));
 
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+    if (!jsPDFClass) {
+        throw new Error('jsPDF no está disponible');
+    }
+
+    const pdf = new jsPDFClass('p', 'mm', 'a4');
     const pageHeight = pdf.internal.pageSize.getHeight();
     const pageWidth = pdf.internal.pageSize.getWidth();
     const margin = 10;
